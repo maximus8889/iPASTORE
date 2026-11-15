@@ -1,21 +1,25 @@
-# iPASTORE
+# iPAStore
 
 Your apps. One beautiful home.
 
-[Website](https://maximus8889.github.io/iPASTORE/) · [Releases & complete source](https://github.com/maximus8889/iPASTORE/releases)
+[Website](https://maximus8889.github.io/iPAStore/) · [Releases and complete source](https://github.com/maximus8889/iPAStore/releases)
 
-## Build 145 candidate
+## Build 146 candidate
 
-First-launch welcome with Certificate or Free setup. Settings has a prominent signing card, organized controls and an Open Welcome button. Apps uses four squares. New signing options include ProMotion, Game Mode, iPad full screen and compression.
+A focused welcome offers Certificate or Free setup. Settings uses matching Sign and Manage controls, a smaller Open Welcome row, and a friendly How iPAStore Works guide. Search stays visible while results scroll. Installed apps remain openable across mode changes, with a switch prompt when needed.
 
-Certificate mode installs separate Home Screen apps using a matching .p12 and provisioning profile. Free mode keeps apps inside iPASTORE and renews through an Apple Account. Integrated on-device pairing supports iOS 27+; a local connection helper remains required. Earlier systems need an existing pairing record. Free signing usually expires in seven days; background scheduling depends on iOS.
+Certificate mode with a matching .p12 and provisioning profile installs separate Home Screen apps. Free mode runs apps inside iPAStore, normally renewing every seven days. On-device pairing supports iOS 27+ and needs a local connection helper; earlier systems require an existing pairing record.
 
-The website offers a removable setup profile containing only an installer Web Clip. **A profile does not sign or install the native app.** Public native installation awaits a valid distribution-signed build. No VPN, DNS or management payload is added by this profile.
+Add as an App creates a native copy using an original IPA. It requires Certificate mode and a valid matching profile. The existing copy stays intact. iOS prevents automatic transfer of private saves into another app; use each app’s supported cloud-save or export/import feature.
 
-The IPA requires valid signing before installation. Builds and fixture tests pass; native OTA bootstrap, phone pairing, real certificate installs and a full renewal cycle still require device qualification. Keep required extensions and keychain groups when signing.
+The setup profile contains an installer Web Clip only. It does not sign or install the native app. Public native installation still needs a legitimate distribution-signed build. The profile adds no VPN, DNS or management payload.
 
-## Source & credits
+## Source and verification
 
-Download iPASTORE-source.tar.gz from release assets for complete host and modified backend source, dependency revisions, retained licenses, build scripts and validation scripts. See README-IPAStore.md and Release1/BUILD145.md. Website files are in docs/ and published at the repository root.
+The release’s iPAStore-source.tar.gz includes the host and modified signing backend source, exact dependency revisions, retained licenses, build scripts and validation scripts. See README-IPAStore.md and Release1/BUILD146.md. The development IPA requires valid signing before installation. Retain required extensions and keychain groups.
 
-Powered by modified LiveContainer and SideStore engines (AGPL-3.0), and Zsign-Package (GPL-3.0). Feather is an installation reference. Required credits remain in Credits & Licenses. No SideInstaller code or binaries are bundled. No personal signing keys, accounts, pairing records or device identifiers are distributed. Independent project; not affiliated with Apple or upstream projects.
+Release builds and fixture checks pass; live phone pairing, real certificate installation and a complete renewal cycle need device qualification. The seven-day renewal schedule depends on iOS and connectivity. No user signing keys, accounts, pairing records or device identifiers are published.
+
+## Credits
+
+Modified LiveContainer and SideStore engines: AGPL-3.0. Zsign-Package: GPL-3.0. Feather is an installation reference. Required notices remain in Credits & Licenses. No SideInstaller code or binaries are bundled. Independent project; not affiliated with Apple or upstream projects.
