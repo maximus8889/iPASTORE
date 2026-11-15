@@ -7,7 +7,7 @@
     if(distribution.ready===true&&typeof distribution.manifest==='string'&&new URL(distribution.manifest).protocol==='https:'){
       const status=document.getElementById('availability');if(status)status.textContent='Open the installer from your Home Screen to continue.';
       const action=document.getElementById('native-install');
-      if(action){action.href='itms-services://?action=download-manifest&url='+encodeURIComponent(distribution.manifest);action.removeAttribute('aria-disabled');action.textContent='Install iPASTORE';}
+      if(action){action.href='itms-services://?action=download-manifest&url='+encodeURIComponent(distribution.manifest);action.removeAttribute('aria-disabled');action.textContent='Install iPAStore';}
     }
   }catch{}
 })();

@@ -5,7 +5,7 @@
 	<key>ConsentText</key>
 	<dict>
 		<key>default</key>
-		<string>This profile adds only a removable Home Screen shortcut. Native iPASTORE installation requires a valid signed build.</string>
+		<string>This profile adds only a removable Home Screen shortcut. Native iPAStore installation requires a valid signed build.</string>
 	</dict>
 	<key>PayloadContent</key>
 	<array>
@@ -5151,9 +5151,9 @@
 			<key>IsRemovable</key>
 			<true/>
 			<key>Label</key>
-			<string>iPASTORE Installer</string>
+			<string>iPAStore Installer</string>
 			<key>PayloadDisplayName</key>
-			<string>iPASTORE Installer</string>
+			<string>iPAStore Installer</string>
 			<key>PayloadIdentifier</key>
 			<string>app.ipastore.installer.shortcut</string>
 			<key>PayloadType</key>
@@ -5169,13 +5169,13 @@
 		</dict>
 	</array>
 	<key>PayloadDescription</key>
-	<string>Adds the iPASTORE installer shortcut to your Home Screen. This profile does not install or sign the native app and does not configure VPN, DNS or device management.</string>
+	<string>Adds the iPAStore installer shortcut to your Home Screen. This profile does not install or sign the native app and does not configure VPN, DNS or device management.</string>
 	<key>PayloadDisplayName</key>
-	<string>iPASTORE Installer</string>
+	<string>iPAStore Installer</string>
 	<key>PayloadIdentifier</key>
 	<string>app.ipastore.installer.profile</string>
 	<key>PayloadOrganization</key>
-	<string>iPASTORE</string>
+	<string>iPAStore</string>
 	<key>PayloadType</key>
 	<string>Configuration</string>
 	<key>PayloadUUID</key>
