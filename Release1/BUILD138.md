@@ -1,0 +1,9 @@
+# Update138: native product edge swipe
+
+Continue137 Search-contained native field, correct normal-height controls and approved sound. User confirms physical edge swipe fails; default hidden-toolbar native behavior cannot be assumed working. Add a product-only UIViewController helper using the existing public UINavigationController interactivePopGestureRecognizer and its native targets/interactive transition. Gate begin to visible current top product, depth>1, no active transition/presentation and leading horizontal motion (LTR/RTL). Forward other optional delegate methods, retain original weak delegate and enabled state; restore only when still owned, avoid chains when products overlap appearance, do not replace target/global navigation/tab delegates or add full-content gestures. Product disappearance/dismantle restores. Actual policy fixture test PASS; builds/package/phone native swipe/cancel checks pending. User audio preview approved; do not alter sound again.
+
+Device Release and preview builds PASS. Actual edge policy PASS: root, active transition, wrong owner, presentation, vertical/reverse/nonfinite motion rejected; leading direction LTR/RTL accepted. Native gesture targets remain UIKit-owned.137 feedback behavior and sealed sound already passed and unchanged. Packaging138; exact new candidate approval/physical edge-swipe and cancellation checks pending.
+
+Sealed strict package and packaged sound checks PASS. SHA2562239433fe3da4eab8de7c949a46b5184b1a5698be3ec3ad3ecf13129e5970302. Await exact138 install/test approval,137 still installed.
+
+138 installed after exact approval. Phone user confirms swipe still does not work. Controller-chain helper did not establish working edge pop; do not claim138 swipe PASS.139 uses actual UIView window attachment/responder hierarchy and targeted opt-in app-owned diagnostics to observe setup/receive/begin. Controls/audio remain137 verified.

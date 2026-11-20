@@ -1,0 +1,45 @@
+[
+  {
+    "id": "hub-crystall1ne",
+    "error": "Publisher artwork unavailable; use named library fallback"
+  },
+  {
+    "id": "hub-yattee",
+    "url": "https://raw.githubusercontent.com/yattee/yattee/main/assets/yattee-icon-512.png",
+    "asset": "Library-hub-yattee"
+  },
+  {
+    "id": "hub-kodi-ios",
+    "url": "https://kodi.tv/images/kodi-logo.svg",
+    "asset": "Library-hub-kodi-ios"
+  },
+  {
+    "id": "hub-nineanimator",
+    "url": "https://caseycz.github.io/iOS-Hub/assets/source-icons/nineanimator.svg",
+    "asset": "Library-hub-nineanimator"
+  },
+  {
+    "id": "hub-bringyour",
+    "url": "https://caseycz.github.io/iOS-Hub/assets/source-icons/bringyour.svg",
+    "asset": "Library-hub-bringyour"
+  },
+  {
+    "id": "hub-wayfarer",
+    "url": "https://caseycz.github.io/iOS-Hub/assets/source-icons/wayfarer.svg",
+    "asset": "Library-hub-wayfarer"
+  },
+  {
+    "id": "hub-melonx",
+    "error": "Publisher artwork unavailable; use named library fallback"
+  },
+  {
+    "id": "hub-burrito-source",
+    "url": "https://pbs.twimg.com/profile_images/980683701628497920/Iv0DTyQA_400x400.jpg",
+    "asset": "Library-hub-burrito-source"
+  },
+  {
+    "id": "hub-winston",
+    "url": "https://raw.githubusercontent.com/lo-cafe/winston-altstore/main/images/0.png",
+    "asset": "Library-hub-winston"
+  }
+]

@@ -1,0 +1,115 @@
+{
+  "repositories": [
+    {
+      "name": "SideStore",
+      "url": "https://github.com/LiveContainer/SideStore.git",
+      "commit": "ee3cc16a67f9fed766f79a0ed70938f0f8ad5a07"
+    },
+    {
+      "name": "dylibify",
+      "url": "https://github.com/LiveContainer/dylibify.git",
+      "commit": "5daf713df9fb07724510490c88aa8e00061be14a"
+    },
+    {
+      "name": "AnisetteKit",
+      "url": "https://github.com/mahee96/AnisetteKit.git",
+      "commit": "db8b41022697b6c19be8a5f01a1ce834145a2a26"
+    },
+    {
+      "name": "CodeSignKit",
+      "url": "https://github.com/mahee96/CodeSignKit",
+      "commit": "d0c67710fda9a2646b9e829cb2cf443892728371"
+    },
+    {
+      "name": "GSACryptoKit",
+      "url": "https://github.com/mahee96/GSACryptoKit.git",
+      "commit": "eae2590eaf17fe98ce9c76b3ec2bd42b780eb123"
+    },
+    {
+      "name": "KeychainAccess",
+      "url": "https://github.com/kishikawakatsumi/KeychainAccess",
+      "commit": "e0c7eebc5a4465a3c4680764f26b7a61f567cdaf"
+    },
+    {
+      "name": "MarkdownKit",
+      "url": "https://github.com/bmoliveira/MarkdownKit.git",
+      "commit": "39ea7a3fc7e65bcafe55152592b834859be574a5"
+    },
+    {
+      "name": "Nuke",
+      "url": "https://github.com/kean/Nuke",
+      "commit": "30f7a7e72e0607d304fbf69c799474bd5fb6d1ce"
+    },
+    {
+      "name": "RemotePairingKit",
+      "url": "https://github.com/mahee96/RemotePairingKit.git",
+      "commit": "e3f70d16c0c551540a533a39d540e78e5b0a60a8"
+    },
+    {
+      "name": "SemanticVersion",
+      "url": "https://github.com/SwiftPackageIndex/SemanticVersion",
+      "commit": "ea8eea9d89842a29af1b8e6c7677f1c86e72fa42"
+    },
+    {
+      "name": "Starscream",
+      "url": "https://github.com/daltoniam/Starscream",
+      "commit": "c6bfd1af48efcc9a9ad203665db12375ba6b145a"
+    },
+    {
+      "name": "ZIPFoundation",
+      "url": "https://github.com/weichsel/ZIPFoundation.git",
+      "commit": "22787ffb59de99e5dc1fbfe80b19c97a904ad48d"
+    },
+    {
+      "name": "libdeflate",
+      "url": "https://github.com/SideStore/libdeflate",
+      "commit": "da6c7dae03b78dc71af973664575e4209786fbfe"
+    },
+    {
+      "name": "swift-asn1",
+      "url": "https://github.com/apple/swift-asn1.git",
+      "commit": "9f542610331815e29cc3821d3b6f488db8715517"
+    },
+    {
+      "name": "swift-crypto",
+      "url": "https://github.com/apple/swift-crypto.git",
+      "commit": "bb4ba815dab96d4edc1e0b86d7b9acf9ff973a84"
+    },
+    {
+      "name": "SideSign",
+      "commit": "752d1ef602aa792a432ffa1e71646dc1ecf7363c",
+      "url": "https://github.com/SideStore/SideSign"
+    },
+    {
+      "name": "minimuxer",
+      "commit": "12be70dc2627307a16bfd2dc7a009080d5bec909",
+      "url": "https://github.com/SideStore/minimuxer"
+    }
+  ],
+  "package_resolved_sha256": "6d7132654332f9ba8c22dcf5cb79d8f1016f532a9e89cc4bba1e87bac27cfadc",
+  "source_archive_sha256": "83a9f13fabecd41c1f67c0f0df4a0b49caf0a32d534d7e4b6a26a57593c853e4",
+  "private_derivative": {
+    "changes": [
+      {
+        "path": "SigningBackend/IPAStoreNativeSigning.swift",
+        "sha256": "a547ed8e1d33500ee6bba1dbcc52465fdf99b18c7a89ddbe1358273fd6913599"
+      },
+      {
+        "path": "SideStoreSupport/IPAResultGate.swift",
+        "sha256": "c5a2d1994c17248d58d8da9c9468faeb9f98eb12dd819a5d2cecb876586a6c6e"
+      },
+      {
+        "path": "SigningBackend/Authentication/AuthenticationViewController.swift",
+        "sha256": "6e15295305547ec34cc7a4d19921fee301dba084ae5248503068efc289dacb01"
+      },
+      {
+        "path": "SigningBackend/Authentication/Authentication.storyboard",
+        "sha256": "75071dfbdb4a7dc5eea169ea6485ef12cf70f94e5636a2a404b33a217b50d770"
+      }
+    ],
+    "reconstruction": "Scripts/build_signing_backend.py",
+    "purpose": "iPAStore pairing/signing worker and account-sheet presentation theme; authentication protocols retained",
+    "upstream_source_unchanged": false
+  },
+  "source_archive_note": "Reconstructed from the exact local source checkout used for the bundled backend; private IPAStore additions are included and re-applied by build_signing_backend.py."
+}

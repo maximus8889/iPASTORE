@@ -1,0 +1,75 @@
+{
+  "checked": "2026-11-07",
+  "artwork": [
+    {
+      "id": "altstore",
+      "url": "https://user-images.githubusercontent.com/705880/65270980-1eb96f80-dad1-11e9-9367-78ccd25ceb02.png",
+      "asset": "Library-altstore",
+      "sha256": "f86f016fd7ea2e2b81d448f470a7494d7b87646c535c9f3eacf19026783c0c78",
+      "role": "Publisher-supplied source icon or designated publisher app icon"
+    },
+    {
+      "id": "community",
+      "url": "https://sidestore.io/assets/icon.png",
+      "asset": "Library-community",
+      "sha256": "05f23b6cd07b29048772b0c3bd0afd3eeb8ea3d98b1e5bd63d042bb38cf1bf85",
+      "role": "Publisher-supplied source icon or designated publisher app icon"
+    },
+    {
+      "id": "utm",
+      "url": "https://alt.getutm.app/icon.png",
+      "asset": "Library-utm",
+      "sha256": "a5a8a4066da02c1eb73cda75c74dda19bf314dc79e0e510a7163fcb58060ec0d",
+      "role": "Publisher-supplied source icon or designated publisher app icon"
+    },
+    {
+      "id": "ish",
+      "url": "https://ish.app/assets/icon-full.png",
+      "asset": "Library-ish",
+      "sha256": "7e619ae19e8347b23c09de4747b152087323187ac68c25682b6994119b62aa4a",
+      "role": "Publisher-supplied source icon or designated publisher app icon"
+    },
+    {
+      "id": "dolphinios",
+      "url": "https://cdn.oatmealdome.me/dolphinios/AppIcon.appiconset/ios_marketing1024x1024.png",
+      "asset": "Library-dolphinios",
+      "sha256": "d890679f4ac2846e67a352085fdf472e359069fc18f9b592598e6d6d33f637e2",
+      "role": "Publisher-supplied source icon or designated publisher app icon"
+    },
+    {
+      "id": "provenance",
+      "url": "https://raw.githubusercontent.com/Provenance-Emu/Provenance/develop/Provenance/Resources/Assets.xcassets/AppIcon.appiconset/iTunesArtwork%402x.png",
+      "asset": "Library-provenance",
+      "sha256": "6195767cbba7ce31b2b7b0f6c29e8661082243cb63c8672275cbcd7f45de64d1",
+      "role": "Publisher-supplied source icon or designated publisher app icon"
+    },
+    {
+      "id": "flycast",
+      "url": "https://github.com/flyinghead/flycast/raw/master/shell/linux/flycast.png",
+      "asset": "Library-flycast",
+      "sha256": "226e950eca781d50aef363b3f31259e3977046480e241409ee44dc25ebf6b6e4",
+      "role": "Publisher-supplied source icon or designated publisher app icon"
+    },
+    {
+      "id": "stikdebug",
+      "url": "https://github.com/StikDebug/StikDebug/blob/main/assets/StikDebug.png?raw=true",
+      "asset": "Library-stikdebug",
+      "sha256": "6cbde6094b20c27749a6a3b739e5179c01b05c5e9a25d37ef545c5d20396243b",
+      "role": "Publisher-supplied source icon or designated publisher app icon"
+    },
+    {
+      "id": "ignited",
+      "url": "https://cdn.ignitedemulator.com/assets/altstore-icon.png",
+      "asset": "Library-ignited",
+      "sha256": "1a055ff6683b4064f2c40f81217e82c8417dd36b72b3fa811f9c5df96da5fd56",
+      "role": "Publisher-supplied source icon or designated publisher app icon"
+    },
+    {
+      "id": "feather",
+      "url": "https://github.com/khcrysalis/Feather/blob/v1.x/iOS/Resources/Icons/Main/Mac@3x.png?raw=true",
+      "asset": "Library-feather",
+      "sha256": "c7b0528ed70666ba1e07c893a7ce9791dc418e2cf6543784e5234e694bbd08f2",
+      "role": "Publisher-supplied source icon or designated publisher app icon"
+    }
+  ]
+}

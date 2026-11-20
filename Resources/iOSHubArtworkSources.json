@@ -1,0 +1,596 @@
+{
+  "checked": "2026-11-07",
+  "artwork": [
+    {
+      "id": "hub-utm",
+      "url": "https://alt.getutm.app/icon.png",
+      "asset": "Library-hub-utm",
+      "sha256": "a5a8a4066da02c1eb73cda75c74dda19bf314dc79e0e510a7163fcb58060ec0d",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-provenance",
+      "url": "https://raw.githubusercontent.com/Provenance-Emu/Provenance/develop/Provenance/Resources/Assets.xcassets/AppIcon.appiconset/iTunesArtwork%402x.png",
+      "asset": "Library-hub-provenance",
+      "sha256": "6195767cbba7ce31b2b7b0f6c29e8661082243cb63c8672275cbcd7f45de64d1",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-ish",
+      "url": "https://ish.app/assets/icon-full.png",
+      "asset": "Library-hub-ish",
+      "sha256": "7e619ae19e8347b23c09de4747b152087323187ac68c25682b6994119b62aa4a",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-flycast",
+      "url": "https://github.com/flyinghead/flycast/raw/master/shell/linux/flycast.png",
+      "asset": "Library-hub-flycast",
+      "sha256": "226e950eca781d50aef363b3f31259e3977046480e241409ee44dc25ebf6b6e4",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-sidestore-community",
+      "url": "https://sidestore.io/assets/icon.png",
+      "asset": "Library-hub-sidestore-community",
+      "sha256": "05f23b6cd07b29048772b0c3bd0afd3eeb8ea3d98b1e5bd63d042bb38cf1bf85",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-sidestore-official",
+      "url": "https://apps.sidestore.io/apps/sidestore/v0.1.1/icon.png",
+      "asset": "Library-hub-sidestore-official",
+      "sha256": "33582a42edc863d00d760a3b4b7f1814cd045529ce17f69e54cb80d03ce2fd87",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-stikdebug",
+      "url": "https://github.com/StikDebug/StikDebug/blob/main/assets/StikDebug.png?raw=true",
+      "asset": "Library-hub-stikdebug",
+      "sha256": "6cbde6094b20c27749a6a3b739e5179c01b05c5e9a25d37ef545c5d20396243b",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-livecontainer",
+      "url": "https://raw.githubusercontent.com/LiveContainer/LiveContainer/main/screenshots/AppIcon1024.png",
+      "asset": "Library-hub-livecontainer",
+      "sha256": "51620f4401211178a166e0d175295350081dd57cdc39da8f17e209cc259ae143",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-livecontainer-nightly",
+      "url": "https://raw.githubusercontent.com/LiveContainer/LiveContainer/main/screenshots/AppIcon1024.png",
+      "asset": "Library-hub-livecontainer-nightly",
+      "sha256": "51620f4401211178a166e0d175295350081dd57cdc39da8f17e209cc259ae143",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-manicemu",
+      "url": "https://apps.manicemu.site/images/manicicon.jpg",
+      "asset": "Library-hub-manicemu",
+      "sha256": "7f00500d90588d5a1942a5f1a36026e3081fb12f25893b655d0f3cdc7eb212aa",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-flycast-ios",
+      "url": "https://github.com/chachillie/Flycast-iOS/raw/main/shell/linux/flycast.png",
+      "asset": "Library-hub-flycast-ios",
+      "sha256": "226e950eca781d50aef363b3f31259e3977046480e241409ee44dc25ebf6b6e4",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-geode-ios",
+      "url": "https://ios-repo.geode-sdk.org/img/AltSourceIcon.png",
+      "asset": "Library-hub-geode-ios",
+      "sha256": "8360ea0a431b9d5803c783258e711dbeee89fc46a741737ee7e7d4cb0c405742",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-retrosekai",
+      "url": "https://repo.untitledcharts.com/assets/logo.png",
+      "asset": "Library-hub-retrosekai",
+      "sha256": "f77311c248226689acb9e26c34aa061c33ef416ea0477caec8c22339402270da",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-oatmealdome",
+      "url": "https://cdn.oatmealdome.me/dolphinios/AppIcon.appiconset/ios_marketing1024x1024.png",
+      "asset": "Library-hub-oatmealdome",
+      "sha256": "d890679f4ac2846e67a352085fdf472e359069fc18f9b592598e6d6d33f637e2",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-crystall1ne",
+      "url": "https://alt.crystall1ne.dev/resources/media/the_icon.png",
+      "error": "<urlopen error [Errno 8] nodename nor servname provided, or not known>"
+    },
+    {
+      "id": "hub-pokemmo",
+      "url": "https://pokemmo.com/build/images/altstore.f5930b35.png",
+      "asset": "Library-hub-pokemmo",
+      "sha256": "e9909def6b5e349cba8fcdbb9611fd57a8b1018f2e06e8b0fe9a0749188d7b69",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-odyssey",
+      "url": "https://theodyssey.dev/assets/images/icon.png",
+      "asset": "Library-hub-odyssey",
+      "sha256": "1e614371acc0085a17abdaf4042b4cae12c3b2c1fcad211037e4a45d0a26bacb",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-yattee",
+      "url": "https://raw.githubusercontent.com/yattee/yattee/main/Assets/yattee-icon-512.png",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "id": "hub-ignited",
+      "url": "https://cdn.ignitedemulator.com/assets/altstore-icon.png",
+      "asset": "Library-hub-ignited",
+      "sha256": "1a055ff6683b4064f2c40f81217e82c8417dd36b72b3fa811f9c5df96da5fd56",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-mona",
+      "url": "https://i.imgur.com/PeIdqwy.png",
+      "asset": "Library-hub-mona",
+      "sha256": "dd551a392e1804225a0a3359ad8f5c6e4233c025e5572bbf6be4850ee9f5e43f",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-vortx",
+      "url": "https://raw.githubusercontent.com/VortXTV/VortX/main/docs/logo.png",
+      "asset": "Library-hub-vortx",
+      "sha256": "0d10207b36f5a225a9b021cfac771dd3eb7ca385dfdcd55add22181e3a7b7272",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-stremio-official-pal",
+      "url": "https://i.imgur.com/ykZuH0r.png",
+      "asset": "Library-hub-stremio-official-pal",
+      "sha256": "15791e7ea6ed273a82add4b57223581ffc4484eb4b5dd512ac12d6af77a581e0",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-stremio-ios",
+      "url": "https://i.imgur.com/ykZuH0r.png",
+      "asset": "Library-hub-stremio-ios",
+      "sha256": "85283ac6272a06ba2a3075bdc66c35e11ba41eda2c67cd6d5baa6a0ea5c35264",
+      "role": "Stremio publisher icon from its official source; fallback for broken community source icon URL"
+    },
+    {
+      "id": "hub-kodi-ios",
+      "url": "https://kodi.tv/images/kodi-logo.svg",
+      "error": "Artwork format unavailable"
+    },
+    {
+      "id": "hub-nineanimator",
+      "url": "assets/source-icons/nineanimator.svg",
+      "error": "unknown url type: 'assets/source-icons/nineanimator.svg'"
+    },
+    {
+      "id": "hub-esound",
+      "url": "https://esound.app/images/altstore/source-icon.png?v=4",
+      "asset": "Library-hub-esound",
+      "sha256": "dcc34622557b887d0b27e91ac56c770cb7f7988c755c4b8a6420530ed980f7a6",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-partyknights",
+      "url": "https://partyknights.app/assets/img/icon_128.webp",
+      "asset": "Library-hub-partyknights",
+      "sha256": "6e31539a034a80db0b3cb0f858c6e866b41f844b4ed6640a8ea3a2a52a3e3a5a",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-bringyour",
+      "url": "assets/source-icons/bringyour.svg",
+      "error": "unknown url type: 'assets/source-icons/bringyour.svg'"
+    },
+    {
+      "id": "hub-itorrent",
+      "url": "https://raw.githubusercontent.com/XITRIX/xitrix.github.io/master/sourceIcon.png",
+      "asset": "Library-hub-itorrent",
+      "sha256": "622f0ed277ffab91efbc4ef4f27d321a0c764abb66461fd9d1e7b6797b457fc0",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-qbitconnect",
+      "url": "https://raw.githubusercontent.com/RajnishOne/altstore-releases/main/icons/general/bluematter.png",
+      "asset": "Library-hub-qbitconnect",
+      "sha256": "a5c50d285bc40b06b67496a513bebbc2f0a19d4e625c4468941e82e39a6cd95c",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-artemis",
+      "url": "https://avatars.githubusercontent.com/u/28218457?v=4",
+      "asset": "Library-hub-artemis",
+      "sha256": "eedcc4ca1ca37ebe9c545f9c14a9206e1df896638067bec23c8fba28ad5b078b",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-hackerwebapp",
+      "url": "https://raw.githubusercontent.com/cheeaun/hackerweb-native-2/main/assets/icon.png",
+      "asset": "Library-hub-hackerwebapp",
+      "sha256": "1765d8867ef41d6472f65d89db8534bff5cdbb52718692cd5e358353f2857fa4",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-courtpredict",
+      "url": "https://courtpredict-ios.web.app/icons/source.png",
+      "asset": "Library-hub-courtpredict",
+      "sha256": "28bead5351ca68ce3cfb0bf5c20c87b28cae5d61858d528ec04ae964aaad50ed",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-wayfarer",
+      "url": "https://stor-cdn.f8d.rocks/wf/icon.png",
+      "error": "<urlopen error [Errno 8] nodename nor servname provided, or not known>"
+    },
+    {
+      "id": "hub-qbitcontrol",
+      "url": "https://raw.githubusercontent.com/Michael-128/qBitControl/main/qBitControl/Assets.xcassets/AppIcon.appiconset/logo1.png",
+      "asset": "Library-hub-qbitcontrol",
+      "sha256": "c1094e0b34db1ab483114b46d7aabe1d5471ffe1efa23d198514f59fadc33e62",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-iphanpy",
+      "url": "https://i.imgur.com/AAsffEA.png",
+      "asset": "Library-hub-iphanpy",
+      "sha256": "63f3917b47d7151c8254154df33927d320dea6d56f172cb6816c2ea255c4f144",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-epic-games",
+      "url": "https://content-download-egs.distro.on.epicgames.com/.well-known/EG-Shield-2023-Black-dual-tone-expanded.png",
+      "asset": "Library-hub-epic-games",
+      "sha256": "eb9850a17a376e4b2b5f6ca348b866833b4a216c9bc006f0aebaac3c66a68a1b",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-xn1ckuz-sidebox",
+      "url": "https://avatars.githubusercontent.com/u/74825012?v=4",
+      "asset": "Library-hub-xn1ckuz-sidebox",
+      "sha256": "d0f62a9b3f6807d701d3bb33121e14fb62472d1f89805a9622b895e92a363515",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-dvntm0-workshop",
+      "url": "https://raw.githubusercontent.com/dayanch96/YTLite/refs/heads/main/Resources/icon.png",
+      "asset": "Library-hub-dvntm0-workshop",
+      "sha256": "557d983ed61c2f9bcbede15537e82261dcf94018ec61eb026e40c93f34256e40",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-wuxu-library-plus",
+      "url": "https://external-content.duckduckgo.com/iu/?u=https://i.imgur.com/g17kMl9.jpeg",
+      "asset": "Library-hub-wuxu-library-plus",
+      "sha256": "b83b0b0b4a8d100b9964146cb2c6b8a4044f820c57b989ea8a2fb12ef17289d5",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-baretsky-tweaked",
+      "url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+      "asset": "Library-hub-baretsky-tweaked",
+      "sha256": "6d6ef7bede0416b6ebee2014be5852576dbce89235fe16ea5c44ed01bd522132",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-driftywinds",
+      "url": "https://i.postimg.cc/Kcdr62dc/dp-rounded.png",
+      "asset": "Library-hub-driftywinds",
+      "sha256": "f852264238e52989b87d43bc817ca3596ef9cc4fcece6d020c84b8fc2d204a1e",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-ipa-vault",
+      "url": "https://pub-dd800571175348b6a2745b3396360028.r2.dev/ipavault-altstore-repo-logo.png",
+      "asset": "Library-hub-ipa-vault",
+      "sha256": "011fcc58b4c6e0623ffacb10f3bd6cb0ab9dffa5c819f9ba8ca932cd9c2c0357",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-sideloadlabs",
+      "url": "https://avatars.githubusercontent.com/u/312393257?s=96&v=4",
+      "asset": "Library-hub-sideloadlabs",
+      "sha256": "ca9cf49adb556592699514bb90bbee0ac66e30c2d78bea84412f78e6823a8dbe",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-ytliteplus",
+      "url": "https://raw.githubusercontent.com/YTLitePlus/YTLitePlus-Altstore/main/Youtube_logo-512.png",
+      "asset": "Library-hub-ytliteplus",
+      "sha256": "6a35e1aa432356f3140bfc3dbc804ddaa428fb8e1309fcec370eea04e12161f5",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-moe-altstore",
+      "url": "https://raw.githubusercontent.com/MountainofPenguin/moe-altstore/main/icons/moe_icon.png",
+      "asset": "Library-hub-moe-altstore",
+      "sha256": "e69d9a135368fbcd830d6c53a93a09f6fb5e6d9ff9e05b8e7e36816426a96788",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-youmod-repo",
+      "url": "https://raw.githubusercontent.com/MountainofPenguin/Altstore-Repository/main/assets/IMG_2642.png",
+      "asset": "Library-hub-youmod-repo",
+      "sha256": "b9a3d4674bd727fe4ebf925e8ba579e966a948b37e96149be2c73dd4beb75c4d",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-youproextra",
+      "url": "https://raw.githubusercontent.com/mrdrvt99/Altstore-Repository/main/assets/YouTube.png",
+      "asset": "Library-hub-youproextra",
+      "sha256": "41c67de3e70ba062d8ffd5e15df1ceeff87c5ba6dbfe0fae7a60db4a421fe4b4",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-owo-source",
+      "url": "https://raw.githubusercontent.com/OwO-Network/Repo/main/icons/owo.repo.icon.png",
+      "asset": "Library-hub-owo-source",
+      "sha256": "f923c012691066d741c019bfa6334b75005b589e7452eae3713bedc71f18f8bc",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-cypwn-ipa",
+      "url": "https://repo.cypwn.xyz/assets/images/cypwn_small.png",
+      "asset": "Library-hub-cypwn-ipa",
+      "sha256": "73891ccef90b020591b9367fc6dc122065ec47c611c1f24a6d0bd8e95954cba8",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-apptesters",
+      "url": "https://apptesters.org/apptesters-512x512.png",
+      "asset": "Library-hub-apptesters",
+      "sha256": "87c50616ec277d61c97ef6bff88c110b9acf1fe327e11d66880fe63aeed0b98b",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-youtuberebornplus",
+      "url": "https://raw.githubusercontent.com/arichornlover/YouTube-Reborn-v5/main/layout/Library/Application%20Support/YouTubeReborn.bundle/ytrebornbuttonblack.png",
+      "asset": "Library-hub-youtuberebornplus",
+      "sha256": "e1ea2b9f92bea22c07b660974da4d7dbfdde8743e215fb75a9d648cceaf5caa0",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-apollo-reddit",
+      "url": "https://raw.githubusercontent.com/Balackburn/Apollo/main/public/images/image_0.webp",
+      "asset": "Library-hub-apollo-reddit",
+      "sha256": "4e837198fffde1e318da52518d5dc93d14e684c4dcd807abff9068774c4feda2",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-discord-appstore-builds",
+      "url": "https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/7c/c1/d5/7cc1d552-fca9-bc19-a585-28644c009f4b/AppIcon-0-0-1x_U007epad-0-1-0-sRGB-85-220.png/512x512bb.jpg",
+      "asset": "Library-hub-discord-appstore-builds",
+      "sha256": "38989e9ef98cee08f8dd86963de7c989651ab4759e00e23ea2a01d0d2b026300",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-ytkace",
+      "url": "https://img.lightshot.app/8gRG1MrsTPO7ZiwX_JfmbA.jpeg",
+      "asset": "Library-hub-ytkace",
+      "sha256": "a9a89f766a76ae94c02f959b6769e3fb7d4486ff1cc5bed0fd46e84a33b37d6c",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-heyfordy",
+      "url": "https://repo.heyfordy.dev/assets/repo.png",
+      "asset": "Library-hub-heyfordy",
+      "sha256": "688ec0274244f7120d2f125c08f6f1d928e5cf7de0b6802527d0cd602e87667e",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-ipalibrary",
+      "url": "https://ipalibrary.me/favicon.ico",
+      "asset": "Library-hub-ipalibrary",
+      "sha256": "9ce05ca74df80239e700282454aa88da0f2eb514626bb159238f3db54569ca5c",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-armsx2",
+      "url": "https://ios.armsx2.net/assets/icon.png?v=d83ffc2a",
+      "asset": "Library-hub-armsx2",
+      "sha256": "d83ffc2ad72a3bfca69b03d7aa3d22acc8df4eefef1a5762aa790b909bc58872",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-fouad-source",
+      "url": "https://raw.githubusercontent.com/FouadRaheb/Watusi-for-WhatsApp/master/altstore/icon.png",
+      "asset": "Library-hub-fouad-source",
+      "sha256": "89570c168f19e7913b9d103eefbd1f6996e23e056e026fc7540d1db4792b4211",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-neofreebird",
+      "url": "https://raw.githubusercontent.com/orionblur/NeoFreeBird/v6/icon_rounded.png",
+      "asset": "Library-hub-neofreebird",
+      "sha256": "a39ee089f72c829f6a62f8079f83049d0de8865d10f052500f2e9d43adaa7bba",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-melonx",
+      "url": "https://git.743378673.xyz/CycloKid/assets/media/branch/main/Melo/AppIcons/MeloNX.png",
+      "error": "HTTP Error 502: Bad Gateway"
+    },
+    {
+      "id": "hub-altgallery",
+      "url": "https://raw.githubusercontent.com/bebound/AltGallery/refs/heads/master/assets/icon.png",
+      "asset": "Library-hub-altgallery",
+      "sha256": "60e4c716f0801637dc622031c0852da6696f9ca4f091ab567eb88becb8d3eeb7",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-ripestore",
+      "url": "https://i.imgur.com/pqIZoZo.jpeg",
+      "asset": "Library-hub-ripestore",
+      "sha256": "9de391b0b84b4104558a18fff3e27e082ee8988a33536e031a29c301e475fee0",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-feather",
+      "url": "https://github.com/khcrysalis/Feather/blob/v1.x/iOS/Resources/Icons/Main/Mac@3x.png?raw=true",
+      "asset": "Library-hub-feather",
+      "sha256": "c7b0528ed70666ba1e07c893a7ce9791dc418e2cf6543784e5234e694bbd08f2",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-quantum-source",
+      "url": "https://quarksources.github.io/assets/ElementQ-Circled.png",
+      "asset": "Library-hub-quantum-source",
+      "sha256": "4462db5e9effa7345c47ecdb1bc64464aa6d10b9d99b16c98575291964412fb7",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-spotc",
+      "url": "https://raw.githubusercontent.com/SpotCompiled/.github/main/SpotC%20Icon.png",
+      "asset": "Library-hub-spotc",
+      "sha256": "ba0f9bd88f22cd36ad9d2eb60c14ddbcf5f5a8ab8744cab36154f0af7659dff3",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-foxster-altsource",
+      "url": "https://avatars.githubusercontent.com/u/77606385",
+      "asset": "Library-hub-foxster-altsource",
+      "sha256": "9a94b240e9761b4c940bab1170c780af882296e07dc1f6637d71358c00ce26a3",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-fastsign",
+      "url": "https://fastsign.dev/icon.png",
+      "asset": "Library-hub-fastsign",
+      "sha256": "1f360b42c3590feab86b15dbea9c2085f932111d29096c9eefec20bc7b441585",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-quantum-plus",
+      "url": "https://quarksources.github.io/assets/ElementQ-Circled.png",
+      "asset": "Library-hub-quantum-plus",
+      "sha256": "4462db5e9effa7345c47ecdb1bc64464aa6d10b9d99b16c98575291964412fb7",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-wuxu-standard",
+      "url": "https://external-content.duckduckgo.com/iu/?u=https://external-content.duckduckgo.com/iu/?u=https://i.imgur.com/g17kMl9.png",
+      "asset": "Library-hub-wuxu-standard",
+      "sha256": "b83b0b0b4a8d100b9964146cb2c6b8a4044f820c57b989ea8a2fb12ef17289d5",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-taurine",
+      "url": "https://taurine.app/assets/images/icon.png",
+      "asset": "Library-hub-taurine",
+      "sha256": "22325c4a8f7dd95798e3497de9122ba4925efe17f7fe3f0ce90bd99a00d11e43",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-burrito-source",
+      "url": "https://inds.nerd.net/Resources/required/AppIcon256.png",
+      "error": "<urlopen error [Errno 8] nodename nor servname provided, or not known>"
+    },
+    {
+      "id": "hub-salupov-altrepo",
+      "url": "https://adp.salupovteam.com/pal/icon.png",
+      "asset": "Library-hub-salupov-altrepo",
+      "sha256": "a662f7160d51cbb8fb9eae0176c9b5caca2f29a13474ec38c6ba32e1a47b9bd1",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-cercube",
+      "url": "https://cdn.cercube.com/assets/icon.png",
+      "asset": "Library-hub-cercube",
+      "sha256": "696dd8003339737166ce50fa653092e997147ad2c81e6195c90136e2158c8509",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-rocket",
+      "url": "https://cdn.getrocketapp.io/assets/icon.png",
+      "asset": "Library-hub-rocket",
+      "sha256": "0d62bb4e1dde64ebe357acf663f897f2d475e8677df9f5b65ebcb1b913ae5f7f",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-reynard-browser",
+      "url": "https://github.com/user-attachments/assets/1c42dda2-b778-4342-9f94-8f852c3ad652",
+      "asset": "Library-hub-reynard-browser",
+      "sha256": "e9a839f8e3f1f3727683b8f26f99a6bbd7e301d78dfc750b739652e6147b530f",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-altstore-official",
+      "url": "https://raw.githubusercontent.com/altstoreio/AltStore/marketplace/AltStore/Resources/Icons.xcassets/Raw/Turquoise.imageset/AltStore-2.0.png",
+      "asset": "Library-hub-altstore-official",
+      "sha256": "e036f54a906c4e0ace6a97230526ab82aa49ff1af3f5e35e4a4a7ca4c82f89d8",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-sidestore-connect",
+      "url": "https://apps.sidestore.io/apps/sidestore/v0.1.1/icon.png",
+      "asset": "Library-hub-sidestore-connect",
+      "sha256": "33582a42edc863d00d760a3b4b7f1814cd045529ce17f69e54cb80d03ce2fd87",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-winston",
+      "url": "https://lo.cafe/favicon.png",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "id": "hub-cizzuk-source",
+      "url": "https://i.cizzuk.net/altstore/icon-75rcnwa-opt.png",
+      "asset": "Library-hub-cizzuk-source",
+      "sha256": "00ef7bf86aeab3186371a42a1911038dbbf73937f0d0c0b87b24420dbf1b61b8",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-aidoku",
+      "url": "https://aidoku.app/images/apple-touch-icon.png",
+      "asset": "Library-hub-aidoku",
+      "sha256": "d6357125056b427e0a08562042fa815d85987b48ea3714ed52ed22a45553dddb",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-mangayomi",
+      "url": "https://raw.githubusercontent.com/kodjodevf/mangayomi/refs/heads/main/repo/images/icons/icon_default.webp",
+      "asset": "Library-hub-mangayomi",
+      "sha256": "99ad1af047c8ae5374165ae0b9c0449488048c5ce6cef4b5df1c89b70affbae8",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-anymex",
+      "url": "https://raw.githubusercontent.com/RyanYuuki/AnymeX/refs/heads/main/repo/images/icons/anymex.webp",
+      "asset": "Library-hub-anymex",
+      "sha256": "71e67f4cad6060fe1aafcbe8c0be78649bfecc9838e1d2ab1cf9f2a6e0fa6693",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-animeko-openani",
+      "url": "https://avatars.githubusercontent.com/u/166622089",
+      "asset": "Library-hub-animeko-openani",
+      "sha256": "5eb72e2ccd35da9c6494433ca79cb4ab5d8dad6f9d6479e10aaadb3efc9de349",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-wsf-source",
+      "url": "https://raw.githubusercontent.com/WSF-Team/WSF/main/portal/resources/wsf.png",
+      "asset": "Library-hub-wsf-source",
+      "sha256": "5d2e70219e8b4155dfc027c18271facc53228b9fc2aedd525d353ed1f4ff9d14",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-nuvio",
+      "url": "https://raw.githubusercontent.com/NuvioMedia/NuvioMobile/0.4.11/iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/app-icon-1024.png",
+      "asset": "Library-hub-nuvio",
+      "sha256": "9e8d914d519bc1731cb470c2149d15782e9ab7b60d1d123b90d294d8a8365806",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    },
+    {
+      "id": "hub-ryuksign",
+      "url": "https://raw.githubusercontent.com/faroukbmiled/RyukSign/refs/heads/main/repo-icon.png",
+      "asset": "Library-hub-ryuksign",
+      "sha256": "9ffadc8759970d342f156cecbc48e1d6145e86783ecffe523a827177d4254e28",
+      "role": "Publisher artwork from iOS Hub registry; resized for app display"
+    }
+  ]
+}

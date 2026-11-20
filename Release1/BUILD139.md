@@ -1,0 +1,7 @@
+# Update139: actual native gesture attachment
+
+138 physical swipe still fails.139 replaces child-controller lookup with an attached UIView probe: didMoveToWindow/superview/layout resolves actual native nav from bounded responder chain or window-root child hierarchy whose top view contains the probe. Same current-top/depth/transition/presentation/direction safety guards, public UIKit native edge recognizer and native animation/targets. Scoped touch receive + begin decisions support custom hidden toolbar; other optional callbacks forwarded, original delegates restored with overlap guards. No tab/full-content/global gesture replacement. Optional --ipa-navigation-diagnostics writes bounded32 app-owned structural events (no query/app/account text) only during test launch, normal launches do not write. Need compile/package/phone gesture plus debug record check. Sound user-approved and137 controls/query preserved.
+
+Device Release and preview compile PASS; actual motion/root/transition/ownership/presentation policy fixtures PASS. All feedback/model source unchanged from previously checked137/135. Fresh package preparing;139 exact approval and physical/native diagnostics pending.
+
+Sealed139 archive CRC/deep strict signatures/version/worker and packaged audio PASS. SHA25673639fb607272aa8fa8e4d19876b2ffc536eb4fb4f309a4240136fc50519e9d6. New exact139 install/test approval pending;138 currently installed.

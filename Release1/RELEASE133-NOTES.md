@@ -1,0 +1,10 @@
+# iPAStore update133
+
+- Remembers compatibility launch for an installed revision after explicit selection or a real initial/early guest failure. Automatically retries at most once, without a repeated recovery prompt. Generic startup timeout and later running-app exit do not force restart preferences;131 preferences are ignored. App updates try the normal launcher again.
+- Direct guest return uses a scoped local notification to the already-running host instead of opening an app URL. Guest fades to black before close, then iPAStore fades back in. Existing two-finger double-tap control remains.
+- Compatibility handoff uses a solid black cover rather than a root screenshot/scale animation. Its first guest window and return to storefront get matching short black fades. **The compatibility process still must restart through iOS; this does not remove or override the OS Home Screen/app-switch transition.** Fusion's direct in-extension build has failed on this device and no verified fix for that has been established.
+- Apple Account setup reuses existing readiness state, avoiding duplicate certificate/keychain/profile reads. Local setup content appears during on-demand isolated-tool startup and identical layout updates are coalesced. Cold process/database startup still takes time; no account background prewarming or network/authentication changes.
+
+Local model/lifecycle/policy and real cross-process return callback checks pass. Device Release/preview compilation and strict package checks pass. Build133 is installed and independently version-confirmed. User-assisted checks confirm Fusion opens twice without a compatibility prompt and Flappy Bird returns smoothly. Native return-request diagnostic and process inventory confirm the same host remains running across that direct return. Apple Account setup form opens; its scene reported ready85ms after controller creation in one observation (not a full navigation/A/B benchmark). Remote taps did not work, so the user performed phone gestures. No universal compatibility/zero-latency claim.
+
+SHA256: `8308399923d6631b12fb12b4f86f82adf4a9752d0df667741f4e3f0669303693`
