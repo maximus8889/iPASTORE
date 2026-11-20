@@ -21,15 +21,17 @@ struct IPAUpdatesView: View {
                     HStack { Text(checking ? "Checking…" : "Check for Updates"); Spacer(); if checking { ProgressView() } }
                 }.disabled(checking)
                 if let result { Text(result).foregroundStyle(.secondary) }
+                if let releaseURL { Link("View Latest Release", destination: releaseURL) }
             }
             Section {
-                if let releaseURL { Link("View Latest Release", destination: releaseURL) }
                 Link("Open Download Page", destination: IPADistribution.homepage)
             } footer: { Text("Updates are published through GitHub. iOS requires you to approve and sign an updated IPA with a valid installation method. Existing data normally stays when the bundle identity and signing setup are retained.") }
         }.navigationTitle("Updates").navigationBarTitleDisplayMode(.inline).ipaNativePage()
     }
     private func check() async {
-        checking = true; defer { checking = false }
+        checking = true
+        releaseURL = nil
+        defer { checking = false }
         do {
             let configuration = URLSessionConfiguration.ephemeral
             configuration.timeoutIntervalForRequest = 20

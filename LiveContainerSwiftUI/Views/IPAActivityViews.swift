@@ -96,7 +96,7 @@ struct IPARecentShelf: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             NavigationLink { IPAHistoryList() } label: {
-                HStack(spacing: 6) { Text("Recent").ipaFont(.title2, weight: .bold); Image(systemName: "chevron.right").ipaFont(.subheadline, weight: .semibold).foregroundStyle(.tertiary) }.foregroundStyle(.primary)
+                HStack(spacing: 6) { Text("Recent").ipaFont(.title2, weight: .medium); Image(systemName: "chevron.right").ipaFont(.subheadline, weight: .semibold).foregroundStyle(.tertiary) }.foregroundStyle(.primary)
             }.buttonStyle(.plain)
             GeometryReader { geometry in
                 ScrollView(.horizontal) {
@@ -134,17 +134,13 @@ private struct IPACollectionSearchField: View {
     @Binding var query: String
     @Binding var presented: Bool
     let prompt: String
-    @FocusState private var focused: Bool
     var body: some View {
-        HStack(spacing: 12) {
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField(prompt, text: $query).textInputAutocapitalization(.never).autocorrectionDisabled().focused($focused).submitLabel(.search)
-                if !query.isEmpty { Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }.accessibilityLabel("Clear search") }
-            }.padding(10).background(Color(uiColor: .tertiarySystemFill), in: RoundedRectangle(cornerRadius: 12))
-            Button("Cancel") { focused = false; query = ""; presented = false }
-        }.padding(.horizontal, 20).padding(.vertical, 8).frame(maxWidth: 760).frame(maxWidth: .infinity)
-            .background(.bar).task { focused = true }
+        HStack(spacing: 6) {
+            IPACatalogSearchField(text: $query, editing: .constant(false), prompt: prompt, autofocus: true)
+                .frame(height: 52)
+            IPACloseSearchButton { query = ""; presented = false }
+        }.padding(.horizontal, 12).padding(.vertical, 4).frame(maxWidth: 760).frame(maxWidth: .infinity)
+            .background(.bar)
     }
 }
 
@@ -167,5 +163,15 @@ struct IPAArrangeLibraries: View {
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
                 .onAppear { ordered = items }
         }.modifier(IPATheme())
+    }
+}
+
+struct IPACloseSearchButton: View {
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "xmark").font(.body.weight(.semibold)).foregroundStyle(.primary)
+                .frame(width: 44, height: 44).background(.regularMaterial, in: Circle())
+        }.accessibilityLabel("Close search")
     }
 }

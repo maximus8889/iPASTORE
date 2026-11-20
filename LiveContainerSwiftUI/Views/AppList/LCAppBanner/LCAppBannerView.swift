@@ -129,6 +129,7 @@ final class LCAppBannerRootView: UIView {
         appInfo: LCAppInfo,
         dynamicColors: Bool,
         darkModeIcon: Bool,
+        subtitle: String?,
         traitCollection: UITraitCollection
     ) {
         let icon = appInfo.iconIsDarkIcon(darkModeIcon) ?? UIImage()
@@ -141,7 +142,8 @@ final class LCAppBannerRootView: UIView {
         remarkLabel.font = IPAAppearance.uiFont(size: 10, style: .caption2)
         nameLabel.text = model.displayName
         nameLabel.textColor = .label
-        versionLabel.text = "Version \(model.version)"
+        versionLabel.text = subtitle
+        versionLabel.isHidden = subtitle == nil
         versionLabel.textColor = textColor
         remarkLabel.text = model.uiRemark
         remarkLabel.textColor = textColor.withAlphaComponent(0.8)
@@ -168,7 +170,8 @@ final class LCAppBannerRootView: UIView {
             isEnabled: !model.isAppRunning
         )
 
-        var accessibilityParts = [model.displayName, "Version \(model.version)"]
+        var accessibilityParts = [model.displayName]
+        if let subtitle { accessibilityParts.append(subtitle) }
         if !model.uiRemark.isEmpty {
             accessibilityParts.append(model.uiRemark)
         }

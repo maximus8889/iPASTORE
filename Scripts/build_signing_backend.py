@@ -18,6 +18,8 @@ with tarfile.open(archive) as source:
     # Python's data filter rejects external/traversing paths and unsafe link targets.
     source.extractall(work, filter='data')
 backend = work/'SideStore'
+subprocess.run(['patch', '--batch', '--forward', '-p1', '-i',
+                str(root/'SigningBackend/WidgetAppearance.patch')], cwd=backend, check=True)
 addition = backend/'SideStore/IPAStore'
 addition.mkdir(parents=True, exist_ok=True)
 for source, name in [(root/'SigningBackend/IPAStoreNativeSigning.swift','IPAStoreNativeSigning.swift'), (root/'SideStoreSupport/IPAResultGate.swift','IPAResultGate.swift')]:

@@ -231,10 +231,22 @@ private struct IPAHostedGuestView: UIViewControllerRepresentable {
         panel.axis = .vertical; panel.alignment = .center; panel.spacing = 16; panel.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.font = .preferredFont(forTextStyle: .headline); titleLabel.textAlignment = .center; titleLabel.numberOfLines = 3
         detailLabel.font = .preferredFont(forTextStyle: .subheadline); detailLabel.textColor = .secondaryLabel; detailLabel.numberOfLines = 0; detailLabel.textAlignment = .center
-        let back = UIButton(type: .system); back.setTitle("Return to iPAStore", for: .normal); back.addTarget(self, action: #selector(close), for: .touchUpInside)
+        let icon = UIImageView(image: app.model.appInfo.iconIsDarkIcon(false))
+        icon.contentMode = .scaleAspectFill; icon.clipsToBounds = true
+        icon.layer.cornerRadius = 17
+        NSLayoutConstraint.activate([icon.widthAnchor.constraint(equalToConstant: 68), icon.heightAnchor.constraint(equalToConstant: 68)])
+        let back = UIButton(type: .system)
+        var returnStyle = UIButton.Configuration.filled()
+        returnStyle.title = "Return to iPAStore"
+        returnStyle.image = UIImage(systemName: "arrow.uturn.left")
+        returnStyle.imagePadding = 9
+        returnStyle.cornerStyle = .capsule
+        returnStyle.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 18, bottom: 12, trailing: 18)
+        back.configuration = returnStyle
+        back.addTarget(self, action: #selector(close), for: .touchUpInside)
         compatibility.setTitle("Use Compatibility Launch", for: .normal); compatibility.addTarget(self, action: #selector(openCompatibility), for: .touchUpInside); compatibility.isHidden = true
         reopen.setTitle("Reopen App", for: .normal); reopen.addTarget(self, action: #selector(reopenApp), for: .touchUpInside); reopen.isHidden = true
-        for child in [titleLabel, detailLabel, reopen, compatibility, back] { panel.addArrangedSubview(child) }
+        for child in [icon, titleLabel, detailLabel, reopen, compatibility, back] { panel.addArrangedSubview(child) }
         panel.isHidden = true
         backdrop.frame = view.bounds; backdrop.autoresizingMask = [.flexibleWidth, .flexibleHeight]; backdrop.backgroundColor = .black
         view.addSubview(backdrop); view.addSubview(panel)
@@ -330,7 +342,7 @@ private struct IPAHostedGuestView: UIViewControllerRepresentable {
         let presentation = IPAAppPresentationPolicy.mode(activated: activated, layoutMatches: layoutMatches, failed: failed)
         if presentation == .rotationRequired {
             titleLabel.text = "Currently Playing"
-            detailLabel.text = "\(app.name)\nRotate your iPhone to continue playing."
+            detailLabel.text = "\(app.name)\nRotate your iPhone to return to the game."
         }
         if presentation == .playing { revealGuest() }
         else { showCover(recovery: presentation != .starting) }

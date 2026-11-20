@@ -35,6 +35,39 @@ extension EnvironmentValues {
     var ipaAccent: Color { get { self[IPAAccentKey.self] } set { self[IPAAccentKey.self] = newValue } }
 }
 
+struct IPAFontChoice: Identifiable {
+    let id: String
+    let name: String
+    var postScript: String? = nil
+
+    static let choices: [Self] = [
+        .init(id: "system", name: "System"), .init(id: "rounded", name: "Rounded"),
+        .init(id: "serif", name: "System Serif"), .init(id: "mono", name: "Monospaced"),
+        .init(id: "avenir", name: "Avenir Next", postScript: "AvenirNext-Regular"),
+        .init(id: "futura", name: "Futura", postScript: "Futura-Medium"),
+        .init(id: "gill", name: "Gill Sans", postScript: "GillSans"),
+        .init(id: "optima", name: "Optima", postScript: "Optima-Regular"),
+        .init(id: "newYork", name: "Baskerville", postScript: "Baskerville"),
+        .init(id: "georgia", name: "Georgia", postScript: "Georgia"),
+        .init(id: "palatino", name: "Palatino", postScript: "Palatino-Roman"),
+        .init(id: "courier", name: "Courier New", postScript: "CourierNewPSMT"),
+        .init(id: "pixel", name: "Monocraft", postScript: "Monocraft")
+    ]
+    static func face(for id: String) -> String? { choices.first { $0.id == id }?.postScript }
+}
+
+enum IPAAppSubtitle: String, CaseIterable, Identifiable {
+    case none, version, description
+    var id: Self { self }
+    var title: String {
+        switch self {
+        case .none: "None"
+        case .version: "Version"
+        case .description: "Description"
+        }
+    }
+}
+
 enum IPAAppearance {
     static func accent(_ hex: String) -> Color {
         // Migrate the previous default to Apple's adaptive native blue. Custom
@@ -57,8 +90,12 @@ enum IPAAppearance {
         let choice = UserDefaults.standard.string(forKey: "IPAFontChoice") ?? "system"
         let bold = UserDefaults.standard.bool(forKey: "IPABoldText")
         var base = UIFont.systemFont(ofSize: size, weight: bold ? .bold : weight)
-        if choice == "pixel", let pixel = UIFont(name: "Monocraft", size: size) { base = pixel }
-        else if choice != "system" {
+        if let face = IPAFontChoice.face(for: choice), let chosen = UIFont(name: face, size: size) {
+            base = chosen
+            if bold || weight >= .semibold, let descriptor = chosen.fontDescriptor.withSymbolicTraits(.traitBold) {
+                base = UIFont(descriptor: descriptor, size: size)
+            }
+        } else if ["rounded", "serif", "mono"].contains(choice) {
             let design: UIFontDescriptor.SystemDesign = choice == "rounded" ? .rounded : choice == "serif" ? .serif : .monospaced
             if let descriptor = base.fontDescriptor.withDesign(design) { base = UIFont(descriptor: descriptor, size: size) }
         }
@@ -99,7 +136,9 @@ private struct IPAFontModifier: ViewModifier {
     @AppStorage("IPABoldText") private var bold = false
     private var font: Font {
         let sizes: [Font.TextStyle: CGFloat] = [.largeTitle: 34, .title: 28, .title2: 22, .title3: 20, .headline: 17, .body: 17, .callout: 16, .subheadline: 15, .footnote: 13, .caption: 12, .caption2: 11]
-        if choice == "pixel" { return .custom("Monocraft", size: sizes[style] ?? 17, relativeTo: style).weight(bold ? .bold : weight) }
+        if let face = IPAFontChoice.face(for: choice) {
+            return .custom(face, size: sizes[style] ?? 17, relativeTo: style).weight(bold ? .bold : weight)
+        }
         let design: Font.Design = choice == "rounded" ? .rounded : choice == "serif" ? .serif : choice == "mono" ? .monospaced : .default
         return .system(style, design: design).weight(bold ? .bold : weight)
     }
@@ -110,8 +149,9 @@ extension View {
 }
 
 struct IPAAppearanceView: View {
-    @AppStorage("IPASoundsEnabled") private var sounds = true
-    @AppStorage("IPAHapticsEnabled") private var haptics = true
+    @AppStorage("IPASuccessSound") private var sound = IPAFeedback.Sound.selected
+    @AppStorage("IPAHapticStyle") private var haptic = IPAFeedback.Haptic.selected
+    @AppStorage("IPAInstalledAppSubtitle") private var subtitle = IPAAppSubtitle.none
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("IPAAppearance") private var mode = "system"
     @AppStorage("IPAAccentHex") private var hex = "systemBlue"
@@ -141,20 +181,49 @@ struct IPAAppearanceView: View {
                 }
             }
             Section {
-                Picker("Font", selection: $font) { Text("System").tag("system"); Text("Rounded").tag("rounded"); Text("Serif").tag("serif"); Text("Monospaced").tag("mono"); Text("Pixel · Monocraft").tag("pixel") }
+                Picker("Font", selection: $font) {
+                    ForEach(IPAFontChoice.choices.filter { $0.postScript.map { UIFont(name: $0, size: 17) != nil } ?? true }) { choice in
+                        Text(choice.name).font(choice.postScript.map { .custom($0, size: 17, relativeTo: .body) } ?? .body).tag(choice.id)
+                    }
+                }.pickerStyle(.navigationLink)
                 Toggle("Bold Text", isOn: $bold)
             } header: { Text("Typography") } footer: { Text("Monocraft is an openly licensed pixel font. System controls, keyboards and installed apps keep their own typography. Text continues to follow your iPhone’s text-size setting.") }
             Section { NavigationLink { IPAIconPicker() } label: { Label("App Icon", systemImage: "app") } } header: { Text("Home Screen") } footer: { Text("Choose an included icon. Your iPhone also controls Home Screen dark and tinted appearances.") }
-            Section("Sounds & Haptics") {
-                Toggle("Success Sounds", isOn: $sounds)
-                Toggle("Haptic Feedback", isOn: $haptics)
-                Button("Preview App Opening") { IPAFeedback.appWillOpen() }
-                Button("Preview Success") { IPAFeedback.success() }
+            Section("Apps") {
+                Picker("Under App Names", selection: $subtitle) {
+                    ForEach(IPAAppSubtitle.allCases) { Text($0.title).tag($0) }
+                }.pickerStyle(.navigationLink)
             }
-            Section { Button("Reset Appearance") { mode = "system"; hex = "systemBlue"; font = "system"; bold = false } }
+            Section("Sounds & Haptics") {
+                NavigationLink {
+                    feedbackChoices("Success Sound", options: IPAFeedback.Sound.allCases, selection: $sound) { IPAFeedback.preview($0) }
+                } label: { IPASettingsRow("Success Sound", subtitle: sound.title, symbol: "waveform", color: .indigo) }
+                NavigationLink {
+                    feedbackChoices("Haptic Feedback", options: IPAFeedback.Haptic.allCases, selection: $haptic) { IPAFeedback.preview($0) }
+                } label: { IPASettingsRow("Haptic Feedback", subtitle: haptic.title, symbol: "iphone.radiowaves.left.and.right", color: .teal) }
+            }
+            Section { Button("Reset Appearance") { mode = "system"; hex = "systemBlue"; font = "system"; bold = false; subtitle = .none } }
         }.navigationTitle("Appearance").navigationBarTitleDisplayMode(.inline).ipaNativePage()
             .modifier(IPATheme())
             .preferredColorScheme(mode == "light" ? .light : mode == "dark" ? .dark : nil)
+    }
+
+    private func feedbackChoices<Option: IPAFeedbackOption, Options: RandomAccessCollection>(
+        _ title: String, options: Options, selection: Binding<Option>, preview: @escaping (Option) -> Void
+    ) -> some View where Options.Element == Option {
+        List(options) { option in
+            Button {
+                selection.wrappedValue = option
+                preview(option)
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: option.symbol).foregroundStyle(.tint).frame(width: 24)
+                    Text(option.title).ipaFont(.body).foregroundStyle(.primary)
+                    Spacer()
+                    if selection.wrappedValue == option { Image(systemName: "checkmark").foregroundStyle(.tint) }
+                }.padding(.vertical, 8)
+            }.accessibilityAddTraits(selection.wrappedValue == option ? .isSelected : [])
+        }.navigationTitle(title).navigationBarTitleDisplayMode(.inline).ipaNativePage()
     }
 }
 
@@ -163,7 +232,11 @@ private struct IPAIconPicker: View {
     @State private var current = UIApplication.shared.alternateIconName
     @State private var changing = false
     @State private var error: String?
-    private let choices: [(String, String?, String)] = [("Automatic", nil, "IconPreviewDefault"), ("Light", "AppIconLight", "IconPreviewLight"), ("Midnight", "AppIconMidnight", "IconPreviewMidnight")]
+    private let choices: [(String, String?, String)] = [("Automatic", nil, "IconPreviewDefault"), ("Light", "AppIconLight", "IconPreviewLight"), ("Midnight", "AppIconMidnight", "IconPreviewMidnight"),
+        ("Ocean", "AppIconOcean", "IconPreviewOcean"), ("Jade", "AppIconJade", "IconPreviewJade"),
+        ("Iris", "AppIconIris", "IconPreviewIris"), ("Ember", "AppIconEmber", "IconPreviewEmber"),
+        ("Sand", "AppIconSand", "IconPreviewSand"), ("Rose", "AppIconRose", "IconPreviewRose")
+    ]
     var body: some View {
         List {
             ForEach(choices, id: \.0) { name, icon, asset in

@@ -78,6 +78,13 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
     @State private var helpPresent = false
     
     @State private var customSortViewPresent = false
+    @State private var sortingApps = false
+    @State private var revealingArrangement = false
+    @State private var showingUpdates = false
+    @EnvironmentObject private var catalog: AltStoreSourcesViewModel
+    @EnvironmentObject private var discovery: IPADiscovery
+    @EnvironmentObject private var catalogIndex: IPAAllAppsIndex
+    @AppStorage("IPAInstalledAppSubtitle") private var subtitle = IPAAppSubtitle.none
     
     @EnvironmentObject private var sharedModel : SharedModel
     @EnvironmentObject private var sharedAppSortManager : LCAppSortManager
@@ -125,9 +132,39 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
         _installOptions = State(initialValue: [])
     }
     
+    private func subtitleText(for app: LCAppModel) -> String? {
+        subtitleText(identifier: app.appInfo.bundleIdentifier(), version: app.version)
+    }
+
+    private func subtitleText(identifier: String?, version: String?) -> String? {
+        switch subtitle {
+        case .none: return nil
+        case .version: return version.map { "Version \($0)" }
+        case .description:
+            guard let identifier, let entry = catalogIndex.entry(identifier: identifier) else { return nil }
+            let variant = entry.variants.first { $0.app.bundleIdentifier.caseInsensitiveCompare(identifier) == .orderedSame }
+            return IPACatalogPresentation.displayValue(variant?.app.subtitle)
+                ?? IPACatalogPresentation.displayValue(variant?.app.description)
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Apps").ipaFont(.largeTitle, weight: .bold).accessibilityAddTraits(.isHeader)
+                    if let failed = installer.jobs.first(where: { $0.failure != nil }) {
+                        Button { installer.showFailure(failed.id) } label: {
+                            Label("Some apps need attention", systemImage: "exclamationmark.circle")
+                                .ipaFont(.subheadline).foregroundStyle(.secondary)
+                        }.buttonStyle(.plain)
+                    } else {
+                        let count = sortedApps.count + (sharedModel.isHiddenAppUnlocked ? sortedHiddenApps.count : 0) + installer.independentApps.count
+                        Text(count == 1 ? "1 app" : "\(count) apps")
+                            .ipaFont(.subheadline).foregroundStyle(.secondary)
+                            .onTapGesture(count: 3) { Task { await authenticateUser() } }
+                    }
+                }.padding(.horizontal, 20).padding(.top, 8).frame(maxWidth: .infinity, alignment: .leading)
                 NavigationLink(
                     destination: navigateTo,
                     isActive: $isNavigationActive,
@@ -157,7 +194,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                 
                 LazyVStack {
                     ForEach(filteredApps, id: \.self) { app in
-                        LCAppBanner(appModel: app, delegate: self)
+                        LCAppBanner(appModel: app, delegate: self, subtitle: subtitleText(for: app))
                     }
                     .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .top)))
                 }
@@ -170,7 +207,12 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                         ForEach(installer.independentApps.filter { searchContext.debouncedQuery.isEmpty || $0.name.localizedCaseInsensitiveContains(searchContext.debouncedQuery) }) { app in
                             HStack {
                                 Image(systemName: "app.badge.checkmark").font(.title2).foregroundStyle(.tint).frame(width: 52, height: 52).background(IPAStyle.card, in: RoundedRectangle(cornerRadius: 12))
-                                VStack(alignment: .leading, spacing: 4) { Text(app.name).font(.headline); Text("Installed on iPhone").font(.caption).foregroundStyle(.secondary) }
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(app.name).ipaFont(.headline)
+                                    if let text = subtitleText(identifier: app.identifier, version: app.version) {
+                                        Text(text).ipaFont(.caption).foregroundStyle(.secondary).lineLimit(1)
+                                    }
+                                }
                                 Spacer()
                                 Button("Open") { Task { await installer.open(app.identifier, preferIndependent: true) } }.buttonStyle(.bordered).buttonBorderShape(.capsule)
                             }.contextMenu { Button("Remove from List", role: .destructive) { forgetting = app } }
@@ -188,7 +230,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                                 }
                                 
                                 ForEach(filteredHiddenApps, id: \.self) { app in
-                                    LCAppBanner(appModel: app, delegate: self)
+                                    LCAppBanner(appModel: app, delegate: self, subtitle: subtitleText(for: app))
                                 }
                                 .transition(.opacity)
                                 
@@ -211,7 +253,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                             }
                             ForEach(filteredHiddenApps, id: \.self) { app in
                                 if sharedModel.isHiddenAppUnlocked {
-                                    LCAppBanner(appModel: app, delegate: self)
+                                    LCAppBanner(appModel: app, delegate: self, subtitle: subtitleText(for: app))
                                 } else {
                                     LCAppSkeletonBanner()
                                 }
@@ -225,21 +267,13 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                         .animation(searchContext.isTyping ? nil : .easeInOut, value: filteredHiddenApps)
                     }
 
-                    let appCount = sharedModel.isHiddenAppUnlocked ? filteredApps.count + filteredHiddenApps.count : filteredApps.count
-                    Group {
-                        if appCount > 0 || !installer.independentApps.isEmpty {
-                            Text("lc.appList.appCounter %lld".localizeWithFormat(appCount + installer.independentApps.count))
-                                .font(.footnote).foregroundStyle(.secondary)
-                        } else {
-                            VStack(spacing: 18) {
-                                Image(systemName: IPAStyle.appsSymbol).font(.system(size: 48, weight: .light)).foregroundStyle(.secondary).accessibilityHidden(true)
-                                Text("Your downloaded apps appear here.")
-                                    .font(.subheadline).foregroundStyle(.secondary)
-                            }.frame(maxWidth: .infinity).padding(.top, 90)
-                        }
+                    if sortedApps.isEmpty && sortedHiddenApps.isEmpty && installer.independentApps.isEmpty {
+                        VStack(spacing: 18) {
+                            Image(systemName: IPAStyle.appsSymbol).font(.system(size: 48, weight: .light)).foregroundStyle(.secondary).accessibilityHidden(true)
+                            Text("Your downloaded apps appear here.").ipaFont(.subheadline).foregroundStyle(.secondary)
+                        }.frame(maxWidth: .infinity).padding(.top, 90)
+                            .onTapGesture(count: 3) { Task { await authenticateUser() } }
                     }
-                    .padding(.horizontal)
-                    .onTapGesture(count: 3) { Task { await authenticateUser() } }
                 }.animation(searchContext.isTyping ? nil : .easeInOut, value: LCUtils.appGroupUserDefault.bool(forKey: "LCStrictHiding"))
 
                 if sharedModel.multiLCStatus == 2 {
@@ -256,34 +290,19 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
             }
             
             .modifier(IPACollectionSearch(query: $searchContext.query, presented: $collectionSearch))
-            .navigationTitle("Apps")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .background(IPAStyle.canvas)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     if sharedModel.multiLCStatus != 2 {
-                            Menu {
-                                Button("Search", systemImage: "magnifyingglass") { collectionSearch = true }
-                                Divider()
-                                Picker("Sort By", selection: $sharedAppSortManager.appSortType) {
-                                    ForEach(AppSortType.allCases, id: \.self) { sortType in
-                                        Label(sortType.displayName, systemImage: sortType.systemImage).tag(sortType)
-                                    }
-                                }
-                                .onChange(of: sharedAppSortManager.appSortType) { _ in
-                                    if sharedAppSortManager.appSortType == .custom { customSortViewPresent = true }
-                                }
-                                if sharedAppSortManager.appSortType == .custom {
-                                    Button("Arrange Apps", systemImage: "slider.horizontal.3") { customSortViewPresent = true }
-                                }
-                            } label: { Label("Sort and Search Apps", systemImage: "arrow.up.arrow.down") }
-                            .font(.system(.body)).fontDesign(.default).fontWeight(.regular)
-                    }
-                }
-                ToolbarItem(placement: .topBarLeading) {
-                    if sharedModel.multiLCStatus != 2 {
-                        if installprogressVisible { ProgressView() }
-                        else { Button { choosingIPA = true } label: { Label("Import IPA from Files", systemImage: "folder") } }
+                        Menu {
+                            Button("Add", systemImage: "plus") { choosingIPA = true }.disabled(installprogressVisible)
+                            Button("Search", systemImage: "magnifyingglass") { collectionSearch = true }
+                            Button("Sort", systemImage: "line.3.horizontal.decrease") { sortingApps = true }
+                            Button("Refresh", systemImage: "arrow.clockwise") { showingUpdates = true }
+                        } label: { Image(systemName: "plus") }
+                            .tint(.primary).accessibilityLabel("App actions")
                     }
                 }
             }
@@ -396,6 +415,27 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
         }
         .sheet(isPresented: $customSortViewPresent) {
             LCCustomSortView()
+        }
+        .sheet(isPresented: $sortingApps, onDismiss: {
+            if revealingArrangement { revealingArrangement = false; customSortViewPresent = true }
+        }) {
+            NavigationStack {
+                Form {
+                    Picker("Sort", selection: $sharedAppSortManager.appSortType) {
+                        ForEach(AppSortType.allCases, id: \.self) { sort in Text(sort.displayName).tag(sort) }
+                    }.pickerStyle(.inline)
+                    Button("Arrange Apps", systemImage: "line.3.horizontal") {
+                        sharedAppSortManager.appSortType = .custom
+                        revealingArrangement = true
+                        sortingApps = false
+                    }
+                }.navigationTitle("Sort Apps").navigationBarTitleDisplayMode(.inline)
+            }.presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showingUpdates) {
+            IPAInstalledAppUpdates(apps: sortedApps.filter { !$0.uiIsHidden && !$0.uiIsLocked },
+                                   independentApps: installer.independentApps)
+                .environmentObject(catalog).environmentObject(discovery).environmentObject(catalogIndex)
         }
         .onAppear() {
             if !isViewAppeared {
@@ -1041,4 +1081,117 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
 
 extension View {
     func apply<V: View>(@ViewBuilder _ block: (Self) -> V) -> V { block(self) }
+}
+
+
+private struct IPAInstalledAppUpdates: View {
+    private struct Update: Identifiable {
+        var id: String { "\(independent ? "device" : "container")|\(variant.app.bundleIdentifier)" }
+        let variant: IPAAppVariant
+        let installed: String
+        let latest: String
+        let independent: Bool
+    }
+    let apps: [LCAppModel]
+    let independentApps: [IPAIndependentApp]
+    @EnvironmentObject private var catalog: AltStoreSourcesViewModel
+    @EnvironmentObject private var discovery: IPADiscovery
+    @EnvironmentObject private var index: IPAAllAppsIndex
+    @Environment(\.dismiss) private var dismiss
+    @State private var checking = true
+    @State private var updates: [Update] = []
+    @State private var failedChecks = 0
+    @State private var selected: Set<String> = []
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if !checking && failedChecks > 0 {
+                    Label(failedChecks == 1 ? "1 store couldn’t be refreshed" : "\(failedChecks) stores couldn’t be refreshed",
+                          systemImage: "exclamationmark.circle").foregroundStyle(.secondary)
+                }
+                if checking {
+                    ProgressView("Checking for updates…")
+                } else if updates.isEmpty {
+                    ContentUnavailableView("No Updates Found", systemImage: "checkmark.circle",
+                                           description: Text("Available versions are checked against each app’s original store."))
+                } else {
+                    Section {
+                        ForEach(updates) { update in
+                            Button {
+                                if !selected.insert(update.id).inserted { selected.remove(update.id) }
+                            } label: {
+                                HStack(spacing: 12) {
+                                    IPAArtwork(url: update.variant.app.iconURL, size: 42)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(update.variant.app.name).ipaFont(.headline)
+                                        Text("\(update.installed) → \(update.latest) · \(update.variant.store.name)")
+                                            .ipaFont(.caption).foregroundStyle(.secondary)
+                                        Text(update.independent ? "On Your iPhone" : "Inside iPAStore")
+                                            .ipaFont(.caption2).foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    if selected.contains(update.id) { Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint) }
+                                }.foregroundStyle(.primary).padding(.vertical, 4)
+                            }.accessibilityAddTraits(selected.contains(update.id) ? .isSelected : [])
+                        }
+                    }
+                    Section {
+                        Button("Download Selected", systemImage: "arrow.down.circle") { download(updates.filter { selected.contains($0.id) }) }
+                            .disabled(selected.isEmpty)
+                        Button("Download All Updates", systemImage: "arrow.down.to.line") { download(updates) }
+                    }
+                }
+            }
+            .navigationTitle("App Updates").navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() }.foregroundStyle(.primary) } }
+        }.task { await check() }
+    }
+
+    private func check() async {
+        async let feeds: Void = catalog.refreshAllSources()
+        async let suggestions: Void = discovery.load()
+        _ = await (feeds, suggestions)
+        index.rebuild(subscribed: catalog.sources, discovered: discovery.sources)
+        await index.waitForRebuild()
+        guard !Task.isCancelled else { return }
+        failedChecks = catalog.sources.filter { $0.error != nil }.count
+        let history = Dictionary(grouping: IPAActivityHistory.shared.downloads, by: { $0.identifier.lowercased() })
+        let containerCopies = Dictionary(grouping: apps.compactMap { app in
+            app.appInfo.bundleIdentifier().map { ($0, app.version) }
+        }, by: { $0.0.lowercased() })
+        let containerRecords = containerCopies.values.compactMap { copies -> (String, String, Bool)? in
+            guard copies.count == 1, let (identifier, version) = copies.first else { return nil }
+            return (identifier, version, false)
+        }
+        let deviceRecords = independentApps.compactMap { app -> (String, String, Bool)? in
+            let recentInstall = history[app.identifier.lowercased()]?.first {
+                abs($0.date.timeIntervalSince(app.installedAt)) < 60
+            }
+            return (app.version ?? recentInstall?.version).map { (app.identifier, $0, true) }
+        }
+        updates = (containerRecords + deviceRecords).compactMap { identifier, version, independent in
+            let key = identifier.lowercased()
+            let records = history[key] ?? []
+            let matching = records.filter { $0.version == version }
+            let origins = Set(matching.compactMap(\.libraryURL).map(IPAStoreDirectory.canonical))
+            guard matching.allSatisfy({ $0.libraryURL != nil }), origins.count == 1,
+                  let origin = origins.first,
+                  let entry = index.entry(identifier: identifier),
+                  let candidate = entry.variants.first(where: {
+                      $0.store.id == origin && $0.app.bundleIdentifier.lowercased() == key
+                  }),
+                  let release = candidate.app.latestVersion,
+                  IPACompatibility.compare(release.version, version) == .orderedDescending,
+                  IPACompatibility.issue(minimum: release.minOSVersion, maximum: release.maxOSVersion, current: UIDevice.current.systemVersion) == nil,
+                  candidate.store.suggestion?.marketplaceOnly != true else { return nil }
+            return Update(variant: candidate, installed: version, latest: release.version, independent: independent)
+        }.sorted { $0.variant.app.name.localizedStandardCompare($1.variant.app.name) == .orderedAscending }
+        checking = false
+    }
+
+    private func download(_ updates: [Update]) {
+        for update in updates { IPAInstallCoordinator.shared.start(update.variant, independent: update.independent) }
+        dismiss()
+    }
 }

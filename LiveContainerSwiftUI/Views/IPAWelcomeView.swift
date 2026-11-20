@@ -66,56 +66,115 @@ private struct IPAWelcomeFreePage: View {
 struct IPACertificateSetupView: View {
     var finish: (() -> Void)? = nil
     @StateObject private var state = IPASigningState()
+    @ObservedObject private var installation = IPAInstallCoordinator.shared
+    @ObservedObject private var renewal = IPARenewalManager.shared
     @State private var importingCertificate = false
     @State private var importingProfile = false
-    @State private var message: String?
-    @State private var removing: String?
+    @State private var removingCertificate: IPAStandaloneCertificates.Entry?
+    @State private var renamingCertificate: IPAStandaloneCertificates.Entry?
+    @State private var certificateName = ""
+    @State private var removingProfile = false
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                IPASetupHeading(symbol: IPASetupSymbols.certificate, title: "Your apps. On your iPhone.", subtitle: "Add your signing files once. New apps install as separate Home Screen apps.")
-                VStack(spacing: 0) {
+                IPASetupHeading(symbol: IPASetupSymbols.certificate, title: "Certificates",
+                                subtitle: "Choose the certificate and provisioning profile used to install Home Screen apps.")
+                IPASettingsGroup(title: "Signing Certificates") {
+                    ForEach(state.certificates) { certificate in
+                        Button { state.selectCertificate(certificate.id) } label: {
+                            HStack {
+                                IPASettingsRow(certificate.name, subtitle: certificate.team, symbol: "checkmark.seal", color: .indigo, showsChevron: false)
+                                if certificate.id == state.selectedCertificateID {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundStyle(.tint).padding(.trailing, 16)
+                                }
+                            }
+                        }
+                        .accessibilityAddTraits(certificate.id == state.selectedCertificateID ? .isSelected : [])
+                        .contextMenu {
+                            if certificate.id != IPAStandaloneCertificates.legacyID {
+                                Button("Rename", systemImage: "pencil") {
+                                    certificateName = certificate.name
+                                    renamingCertificate = certificate
+                                }
+                                Button("Remove Certificate", systemImage: "trash", role: .destructive) {
+                                    removingCertificate = certificate
+                                }
+                            }
+                        }
+                        IPASettingsDivider()
+                    }
                     Button { importingCertificate = true } label: {
-                        IPASettingsRow(state.certificateImported ? "Certificate Added" : "Add Certificate", subtitle: ".p12 file and password", symbol: state.certificateImported ? "checkmark.circle.fill" : "doc.badge.plus", color: state.certificateImported ? .green : .blue)
+                        IPASettingsRow("Add Certificate", subtitle: ".p12 file and password", symbol: "plus.circle.fill", color: .blue)
                     }
-                    IPASettingsDivider()
-                    Button { importingProfile = true } label: {
-                        IPASettingsRow(state.standaloneCertificateReady ? "Profile Added" : "Add Provisioning Profile", subtitle: "Matching .mobileprovision file", symbol: state.standaloneCertificateReady ? "checkmark.circle.fill" : "doc.badge.gearshape", color: state.standaloneCertificateReady ? .green : .blue)
-                    }
-                }.buttonStyle(.plain).background(IPAStyle.card, in: RoundedRectangle(cornerRadius: 24))
-                HStack {
-                    if state.profileSummary != nil || state.profileProblem != nil { Button("Remove Profile", role: .destructive) { removing = "profile" } }
-                    Spacer()
-                }.ipaFont(.footnote).disabled(state.busy || IPAInstallCoordinator.shared.busy)
-                if state.certificateImported && !state.containerCertificateAvailable {
-                    Button { Task { await state.verifyCertificate() } } label: {
-                        Text(state.busy ? "Verifying…" : "Verify for Apps Inside iPAStore").ipaFont(.subheadline, weight: .semibold)
-                    }.disabled(state.busy)
+                }.disabled(!state.canManageCertificates)
+
+                if !state.certificates.isEmpty {
+                    IPASettingsGroup(title: "Provisioning Profile") {
+                        Button { importingProfile = true } label: {
+                            IPASettingsRow(state.profileSummary == nil ? "Add Profile" : "Replace Profile",
+                                           subtitle: state.profileSummary ?? ".mobileprovision file",
+                                           symbol: "doc.badge.gearshape", color: .teal)
+                        }
+                        if state.profileSummary != nil || state.profileProblem != nil {
+                            IPASettingsDivider()
+                            Button { removingProfile = true } label: {
+                                IPASettingsRow("Remove Profile", symbol: "trash", color: .red)
+                            }
+                        }
+                    }.disabled(!state.canManageCertificates)
                 }
-                if let problem = state.profileProblem { Text(problem).ipaFont(.footnote).foregroundStyle(.secondary) }
-                Text("A .p12 alone lets compatible apps run inside iPAStore after verification. Add the matching provisioning profile to install separate Home Screen apps and unlock Add as an App. The profile must authorize your certificate, iPhone and the app.").ipaFont(.footnote).foregroundStyle(.secondary)
+                if let problem = state.profileProblem {
+                    Label(problem, systemImage: "exclamationmark.triangle")
+                        .ipaFont(.footnote).foregroundStyle(.secondary)
+                }
                 if let finish {
                     Button(state.standaloneCertificateReady ? "Start Using iPAStore" : "Finish Later", action: finish)
-                        .ipaFont(.subheadline, weight: .semibold).frame(maxWidth: .infinity, minHeight: 46).buttonStyle(.plain).foregroundStyle(.tint)
+                        .buttonStyle(IPAPillStyle(prominent: true))
+                        .frame(maxWidth: .infinity)
                 }
             }.padding(24).frame(maxWidth: 620).frame(maxWidth: .infinity)
-        }.background(IPAStyle.canvas).navigationTitle("").navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $importingCertificate, onDismiss: { state.reload() }) { IPACertificateImportView().modifier(IPATheme()) }
-            .fileImporter(isPresented: $importingProfile, allowedContentTypes: [UTType(filenameExtension: "mobileprovision") ?? .data]) { result in
-                do {
-                    let url = try result.get(), scoped = url.startAccessingSecurityScopedResource()
-                    defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-                    let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-                    guard size > 0, size <= 2 * 1024 * 1024 else { throw CocoaError(.fileReadTooLarge) }
-                    try IPASigningState.storeProfile(Data(contentsOf: url)); state.reload()
-                } catch { message = error.localizedDescription }
+        }
+        .background(IPAStyle.canvas).navigationTitle("").navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $importingCertificate, onDismiss: { state.reload() }) {
+            IPACertificateImportView(onSave: { try state.saveCertificate($0, password: $1, filename: $2) })
+                .modifier(IPATheme())
+        }
+        .fileImporter(isPresented: $importingProfile, allowedContentTypes: [UTType(filenameExtension: "mobileprovision") ?? .data]) { result in
+            do {
+                let url = try result.get(), scoped = url.startAccessingSecurityScopedResource()
+                defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+                let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+                guard size > 0, size <= 2 * 1024 * 1024 else { throw CocoaError(.fileReadTooLarge) }
+                try state.saveProfile(Data(contentsOf: url))
+            } catch { state.message = error.localizedDescription }
+        }
+        .confirmationDialog("Remove saved signing file?", isPresented: Binding(
+            get: { removingCertificate != nil || removingProfile },
+            set: { if !$0 { removingCertificate = nil; removingProfile = false } }
+        ), titleVisibility: .visible) {
+            Button("Remove", role: .destructive) {
+                if let certificate = removingCertificate { state.removeSavedCertificate(certificate.id) }
+                else if removingProfile { state.removeProfile() }
+                removingCertificate = nil
+                removingProfile = false
             }
-            .alert("Signing Files", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) { Button("OK") { message = nil } } message: { Text(message ?? "") }
-            .confirmationDialog("Remove saved signing file?", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }), titleVisibility: .visible) {
-                Button("Remove", role: .destructive) { state.removeProfile(); removing = nil }
-            } message: { Text("Your apps and original files are kept. You can import the signing file again later.") }
-            .onAppear { state.reload() }
-            .alert("Certificate Check", isPresented: Binding(get: { state.message != nil }, set: { if !$0 { state.message = nil } })) { Button("OK") { state.message = nil } } message: { Text(state.message ?? "") }
+        } message: { Text("You can import the signing file again from its original location.") }
+        .onAppear { state.reload() }
+        .alert("Rename Certificate", isPresented: Binding(
+            get: { renamingCertificate != nil }, set: { if !$0 { renamingCertificate = nil } }
+        )) {
+            TextField("Name", text: $certificateName)
+            Button("Cancel", role: .cancel) { renamingCertificate = nil }
+            Button("Save") {
+                if let certificate = renamingCertificate { state.renameCertificate(certificate.id, to: certificateName) }
+                renamingCertificate = nil
+            }.disabled(certificateName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
+        .alert("Signing Files", isPresented: Binding(get: { state.message != nil }, set: { if !$0 { state.message = nil } })) {
+            Button("OK") { state.message = nil }
+        } message: { Text(state.message ?? "") }
     }
 }
 
@@ -144,11 +203,11 @@ struct IPASetupStep: View {
 }
 
 struct IPASettingsGroup<Content: View>: View {
-    let title: String
+    let title: String?
     @ViewBuilder let content: () -> Content
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title).font(.footnote.weight(.semibold)).textCase(nil).foregroundStyle(.secondary).padding(.leading, 6)
+            if let title { Text(title).font(.footnote.weight(.semibold)).textCase(nil).foregroundStyle(.secondary).padding(.leading, 6) }
             VStack(spacing: 0, content: content).background(IPAStyle.card, in: RoundedRectangle(cornerRadius: 23)).buttonStyle(.plain)
         }
     }
@@ -159,7 +218,10 @@ struct IPASettingsRow: View {
     var subtitle: String?
     let symbol: String
     let color: Color
-    init(_ title: String, subtitle: String? = nil, symbol: String, color: Color) { self.title = title; self.subtitle = subtitle; self.symbol = symbol; self.color = color }
+    var showsChevron: Bool
+    init(_ title: String, subtitle: String? = nil, symbol: String, color: Color, showsChevron: Bool = true) {
+        self.title = title; self.subtitle = subtitle; self.symbol = symbol; self.color = color; self.showsChevron = showsChevron
+    }
     var body: some View {
         HStack(spacing: 14) {
             Image(systemName: symbol).font(.system(size: 18, weight: .medium)).foregroundStyle(color).frame(width: 36, height: 38).background(color.opacity(0.09), in: RoundedRectangle(cornerRadius: 11))
@@ -167,7 +229,7 @@ struct IPASettingsRow: View {
                 Text(title).ipaFont(.body, weight: .medium).foregroundStyle(.primary)
                 if let subtitle { Text(subtitle).ipaFont(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true) }
             }.frame(maxWidth: .infinity, alignment: .leading)
-            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+            if showsChevron { Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary) }
         }.padding(.horizontal, 18).padding(.vertical, 15).contentShape(Rectangle())
     }
 }
@@ -212,7 +274,7 @@ struct IPASigningHero: View {
                 if mode == "container" { IPASignButton(title: "Sign", compact: true, prominent: true).frame(maxWidth: .infinity) }
                 NavigationLink {
                     if mode == "container" { IPAFreeSetupView() } else { IPACertificateSetupView() }
-                } label: { IPASetupActionLabel(title: "Manage", symbol: mode == "container" ? IPASetupSymbols.manageFree : IPASetupSymbols.manageCertificate) }
+                } label: { IPASetupActionLabel(title: "Manage", symbol: IPASetupSymbols.manage) }
                 .buttonStyle(.plain).frame(maxWidth: .infinity)
             }
 
@@ -272,8 +334,7 @@ struct IPASigningOptionsView: View {
 enum IPASetupSymbols {
     static let certificate = "seal.fill"
     static let free = "leaf.circle.fill"
-    static let manageFree = "person.crop.circle.badge.checkmark"
-    static let manageCertificate = "doc.badge.gearshape"
+    static let manage = "doc.badge.gearshape"
 }
 struct IPASetupActionLabel: View {
     @Environment(\.isEnabled) private var enabled

@@ -262,7 +262,6 @@ struct IPASuggestionCards: View {
                 if discovery.loading { ProgressView("Finding Libraries…").frame(maxWidth: .infinity).padding(.vertical, 32) }
                 else { IPAEmptyState(title: "No Libraries Available", subtitle: query.isEmpty ? "Pull down to check again when you’re connected." : "Try a different search.", symbol: IPAStyle.storeSymbol) }
             }
-            IPAWebLink(destination: URL(string: "https://caseycz.github.io/iOS-Hub/")!) { Text("Directory: iOS Hub") }.ipaFont(.subheadline, weight: .semibold).padding(.top, 18)
         }.padding(20).padding(.bottom, 24)
     }
 }
@@ -270,23 +269,42 @@ struct IPASuggestionCards: View {
 // Discovery is a temporary workspace. Library and app pages inside it retain
 // UIKit's native push/back transitions, including the interactive back swipe.
 struct IPASuggestionsSheet: View {
-    @Environment(\.dismiss) private var dismiss
     var body: some View {
         NavigationStack {
             IPASuggestionsView()
-                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
                 .navigationDestination(for: IPAStoreReference.self) { IPAStorePage(reference: $0) }
-        }.presentationDetents([.large]).presentationDragIndicator(.visible).modifier(IPATheme())
+        }.presentationDetents([.fraction(0.78), .large]).presentationDragIndicator(.visible).modifier(IPATheme())
     }
 }
 
 struct IPASuggestionsView: View {
     @EnvironmentObject private var discovery: IPADiscovery
     var body: some View {
-        ScrollView { IPASuggestionCards() }.background(IPAStyle.canvas).navigationTitle("Suggestions").navigationBarTitleDisplayMode(.large).ipaNativePage()
+        ScrollView { IPASuggestionCards() }.background(IPAStyle.canvas).navigationTitle("").navigationBarTitleDisplayMode(.inline).ipaNativePage().toolbar(.hidden, for: .navigationBar)
             .task { await discovery.load() }.refreshable { await discovery.load(force: true) }
     }
 }
+struct IPAStoreAllAppsView: View {
+    let reference: IPAStoreReference
+    var fallback: IPAAppEntry? = nil
+    @EnvironmentObject private var catalog: AltStoreSourcesViewModel
+    @EnvironmentObject private var discovery: IPADiscovery
+    @ObservedObject private var libraryIndex = IPALibraryIndex.shared
+
+    private var source: AltStoreSource? { catalog.source(for: reference) ?? discovery.source(for: reference) }
+
+    var body: some View {
+        let entries = libraryIndex.entries(reference: reference, source: source)
+        if entries.isEmpty, let source, !source.apps.isEmpty {
+            ProgressView("Preparing apps…").frame(maxWidth: .infinity, maxHeight: .infinity)
+                .navigationTitle("All Apps").navigationBarTitleDisplayMode(.inline).ipaNativePage()
+        } else {
+            IPACategoryView(category: .init(name: "All Apps", apps: entries.isEmpty ? [fallback].compactMap { $0 } : entries))
+                .id(source?.id)
+        }
+    }
+}
+
 struct IPAStorePage: View {
     let reference: IPAStoreReference
     @EnvironmentObject private var catalog: AltStoreSourcesViewModel
@@ -347,8 +365,11 @@ struct IPAStorePage: View {
                     ProgressView("Preparing apps…").frame(maxWidth: .infinity).padding(.vertical)
                 } else if entries.isEmpty {
                     IPAEmptyState(title: "No Apps Yet", subtitle: "This library hasn’t published any apps.", symbol: "square.stack.3d.up")
+                } else if let app = entries.first, entries.count == 1 {
+                    Text("In This Library").ipaFont(.title2, weight: .bold)
+                    IPAAppRow(entry: app)
                 } else {
-                    IPACategoryShelves(categories: libraryIndex.categories(reference: reference, source: source), title: "In This Library")
+                    IPACategoryShelves(categories: libraryIndex.categories(reference: reference, source: source), title: "In This Library", library: reference)
                 }
 
             }.padding(20).padding(.bottom, 20).frame(maxWidth: 760).frame(maxWidth: .infinity)

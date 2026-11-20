@@ -59,25 +59,50 @@ final class IPASigningState: ObservableObject {
         UserDefaults.standard.set(true, forKey: "IPASigningCertificateRemoved")
         Self.attemptedRecovery = nil; reload()
     }
-    func removeProfile() {
-        guard !busy, !IPAInstallCoordinator.shared.busy, !IPARenewalManager.shared.working else { return }
-        let file = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.appendingPathComponent("Signing/Standalone.mobileprovision")
-        do { if FileManager.default.fileExists(atPath: file.path) { try FileManager.default.removeItem(at: file) }; reload() }
+    @Published private(set) var certificates: [IPAStandaloneCertificates.Entry] = []
+    @Published private(set) var selectedCertificateID = IPAStandaloneCertificates.legacyID
+
+    var canManageCertificates: Bool {
+        !busy && !Self.verifying && !IPAInstallCoordinator.shared.busy && !IPARenewalManager.shared.working
+    }
+    func selectCertificate(_ id: String) {
+        guard canManageCertificates, certificates.contains(where: { $0.id == id }) else { return }
+        IPAStandaloneCertificates.selectedID = id
+        reload()
+    }
+    func saveCertificate(_ data: Data, password: String, filename: String) throws {
+        guard canManageCertificates else { throw IPAStandaloneCertificates.StoreError.busy }
+        #if !IPASTORE_PREVIEW
+        try IPAStandaloneCertificates.add(data, password: password, filename: filename)
+        reload()
+        #endif
+    }
+    func renameCertificate(_ id: String, to name: String) {
+        guard canManageCertificates else { return }
+        IPAStandaloneCertificates.rename(id, to: name)
+        reload()
+    }
+    func removeSavedCertificate(_ id: String) {
+        guard canManageCertificates else { return }
+        defer { reload() }
+        do { try IPAStandaloneCertificates.remove(id) }
         catch { message = error.localizedDescription }
     }
-    static var savedProfile: Data? {
-        let url = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.appendingPathComponent("Signing/Standalone.mobileprovision")
-        return try? Data(contentsOf: url)
+    func removeProfile() {
+        guard canManageCertificates else { return }
+        do { try IPAStandaloneCertificates.removeProfile(for: selectedCertificateID); reload() }
+        catch { message = error.localizedDescription }
     }
-    static func storeProfile(_ data: Data) throws {
+    func saveProfile(_ data: Data) throws {
+        guard canManageCertificates else { throw IPAStandaloneCertificates.StoreError.busy }
         #if !IPASTORE_PREVIEW
-        _ = try LCUtils.standaloneProfileInfo(data)
+        guard let credential = IPAStandaloneCertificates.credential(for: selectedCertificateID) else {
+            throw IPAStandaloneCertificates.StoreError.missing
+        }
+        _ = try LCUtils.standaloneProfileInfo(data, certificate: credential.data, password: credential.password)
+        try IPAStandaloneCertificates.saveProfile(data, for: selectedCertificateID)
+        reload()
         #endif
-        let url = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.appendingPathComponent("Signing/Standalone.mobileprovision")
-        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
-        var values = URLResourceValues(); values.isExcludedFromBackup = true
-        var directory = url.deletingLastPathComponent(); try directory.setResourceValues(values)
     }
     @Published private(set) var busy = false
     @Published var message: String?
@@ -114,15 +139,20 @@ final class IPASigningState: ObservableObject {
             certificateImported = false; containerCertificateAvailable = false
             certificateProblem = "Add an Apple Account certificate or import a .p12 file with its password to sign apps inside iPAStore."
         }
-        standaloneCertificateReady = false; profileSummary = nil; profileProblem = nil
-        if let profile = Self.savedProfile {
+        certificates = IPAStandaloneCertificates.entries
+        selectedCertificateID = IPAStandaloneCertificates.selectedID
+        standaloneCertificateReady = false
+        profileSummary = nil
+        profileProblem = nil
+        if let credential = IPAStandaloneCertificates.credential(for: selectedCertificateID),
+           let profile = IPAStandaloneCertificates.profile(for: selectedCertificateID) {
             do {
-                let info = try LCUtils.standaloneProfileInfo(profile)
-                let entitlement = info["Entitlements"] as? [String: Any] ?? [:]
-                let identifier = entitlement["application-identifier"] as? String ?? "Unknown app"
+                let info = try LCUtils.standaloneProfileInfo(profile, certificate: credential.data, password: credential.password)
                 let name = info["Name"] as? String ?? "Provisioning Profile"
-                profileSummary = "\(name) · \(identifier)"
-                standaloneCertificateReady = certificateImported && (LCUtils.certificateDates()?["notAfter"] ?? .distantPast) > Date()
+                if let expiration = info["ExpirationDate"] as? Date {
+                    profileSummary = "\(name) · Expires \(expiration.formatted(date: .abbreviated, time: .omitted))"
+                } else { profileSummary = name }
+                standaloneCertificateReady = true
             } catch { profileProblem = error.localizedDescription }
         }
         #else
@@ -244,6 +274,7 @@ final class IPASigningState: ObservableObject {
 
 struct IPACertificateImportView: View {
     let onImport: () -> Void
+    var onSave: ((Data, String, String) throws -> Void)?
     @Environment(\.dismiss) private var dismiss
     @State private var choosing = false
     @State private var data: Data?
@@ -251,7 +282,8 @@ struct IPACertificateImportView: View {
     @State private var password = ""
     @State private var failure: String?
     @FocusState private var passwordFocused: Bool
-    init(initialData: Data? = nil, onImport: @escaping () -> Void = {}) {
+    init(initialData: Data? = nil, onSave: ((Data, String, String) throws -> Void)? = nil, onImport: @escaping () -> Void = {}) {
+        self.onSave = onSave
         self.onImport = onImport
         _data = State(initialValue: initialData)
         _filename = State(initialValue: initialData == nil ? "No File Selected" : "Imported Certificate.p12")
@@ -262,7 +294,10 @@ struct IPACertificateImportView: View {
                 Section {
                     Button(filename) { choosing = true }
                     SecureField("Certificate Password", text: $password).focused($passwordFocused).textContentType(.password)
-                } header: { Text("Certificate") } footer: { Text("Choose a .p12 containing its private key. For standalone iPhone apps, add its matching provisioning profile after importing. For apps inside iPAStore, use the certificate that signed iPAStore. Import does not change iPAStore’s own signature.") }
+                } header: { Text("Certificate") } footer: {
+                    if onSave == nil { Text("Choose the .p12 containing the private key used to sign iPAStore.") }
+                    else { Text("Choose a .p12 containing its private key. Add its matching provisioning profile after importing.") }
+                }
                 if let failure { Section { Text(failure).foregroundStyle(.secondary) } }
             }.navigationTitle("Add Certificate").navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -290,11 +325,133 @@ struct IPACertificateImportView: View {
             failure = "Unable to open the certificate. Check the file and password."
             return
         }
-        IPASigningState.storeCertificate(data, password: password, origin: "file")
+        do {
+            if let onSave { try onSave(data, password, filename) }
+            else { IPASigningState.storeCertificate(data, password: password, origin: "file") }
+        } catch {
+            failure = error.localizedDescription
+            return
+        }
         onImport()
         dismiss()
         #else
         failure = "Certificate import is available on your iPhone."
         #endif
+    }
+}
+
+
+@MainActor enum IPAStandaloneCertificates {
+    struct Entry: Codable, Identifiable {
+        let id: String
+        var name: String
+        let team: String?
+    }
+    struct Credential: Codable {
+        let data: Data
+        let password: String
+    }
+    enum StoreError: LocalizedError {
+        case busy, missing, keychain(OSStatus)
+        var errorDescription: String? {
+            switch self {
+            case .busy: "Wait for signing or installation to finish."
+            case .missing: "Select a certificate before adding its provisioning profile."
+            case .keychain(let status):
+                SecCopyErrorMessageString(status, nil) as String? ?? "The certificate couldn’t be saved securely."
+            }
+        }
+    }
+
+    static let legacyID = "existing"
+    private static let listKey = "IPAStandaloneCertificateList"
+    private static let selectionKey = "IPAStandaloneCertificateSelection"
+    private static let service = "\(Bundle.main.bundleIdentifier ?? "app.ipastore.IPAStore").standalone-certificates"
+    private static var imported: [Entry] {
+        get {
+            guard let data = UserDefaults.standard.data(forKey: listKey) else { return [] }
+            return (try? PropertyListDecoder().decode([Entry].self, from: data)) ?? []
+        }
+        set { UserDefaults.standard.set(try? PropertyListEncoder().encode(newValue), forKey: listKey) }
+    }
+    static var entries: [Entry] {
+        let saved = imported
+        guard credential(for: legacyID) != nil else { return saved }
+        return [Entry(id: legacyID, name: "Existing Certificate", team: nil)] + saved
+    }
+    static var selectedID: String {
+        get {
+            if let value = UserDefaults.standard.string(forKey: selectionKey),
+               (value == legacyID ? credential(for: legacyID) != nil : imported.contains(where: { $0.id == value })) { return value }
+            return credential(for: legacyID) != nil ? legacyID : imported.first?.id ?? legacyID
+        }
+        set { UserDefaults.standard.set(newValue, forKey: selectionKey) }
+    }
+    static func credential(for id: String) -> Credential? {
+        if id == legacyID {
+            #if !IPASTORE_PREVIEW
+            guard let data = LCUtils.certificateData() else { return nil }
+            return Credential(data: data, password: LCSharedUtils.certificatePassword() ?? "")
+            #else
+            return nil
+            #endif
+        }
+        var query = item(id)
+        query[kSecReturnData as String] = true
+        var result: CFTypeRef?
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess, let data = result as? Data else { return nil }
+        return try? PropertyListDecoder().decode(Credential.self, from: data)
+    }
+    #if !IPASTORE_PREVIEW
+    static func add(_ data: Data, password: String, filename: String) throws {
+        guard let team = LCUtils.getCertTeamId(withKeyData: data, password: password) else { throw StoreError.missing }
+        let id = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        if !imported.contains(where: { $0.id == id }) {
+            var query = item(id)
+            query[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+            query[kSecValueData as String] = try PropertyListEncoder().encode(Credential(data: data, password: password))
+            let status = SecItemAdd(query as CFDictionary, nil)
+            guard status == errSecSuccess || status == errSecDuplicateItem else { throw StoreError.keychain(status) }
+            let name = (filename as NSString).deletingPathExtension
+            imported.append(Entry(id: id, name: name.isEmpty ? "Certificate" : name, team: team))
+        }
+        selectedID = id
+    }
+    #endif
+    static func rename(_ id: String, to name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        var saved = imported
+        guard !trimmed.isEmpty, let index = saved.firstIndex(where: { $0.id == id }) else { return }
+        saved[index].name = String(trimmed.prefix(100))
+        imported = saved
+    }
+    static func remove(_ id: String) throws {
+        guard id != legacyID else { return }
+        let status = SecItemDelete(item(id) as CFDictionary)
+        guard status == errSecSuccess || status == errSecItemNotFound else { throw StoreError.keychain(status) }
+        imported.removeAll { $0.id == id }
+        try removeProfile(for: id)
+    }
+    static func profile(for id: String) -> Data? { try? Data(contentsOf: profileURL(id)) }
+    static func saveProfile(_ data: Data, for id: String) throws {
+        let url = profileURL(id)
+        var directory = url.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try directory.setResourceValues(values)
+        try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    }
+    static func removeProfile(for id: String) throws {
+        do { try FileManager.default.removeItem(at: profileURL(id)) }
+        catch let error as CocoaError where error.code == .fileNoSuchFile {}
+    }
+    private static func profileURL(_ id: String) -> URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Signing", isDirectory: true)
+            .appendingPathComponent(id == legacyID ? "Standalone.mobileprovision" : "\(id).mobileprovision")
+    }
+    private static func item(_ id: String) -> [String: Any] {
+        [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: id]
     }
 }

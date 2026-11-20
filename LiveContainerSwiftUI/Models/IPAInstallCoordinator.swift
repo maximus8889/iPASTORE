@@ -25,6 +25,7 @@ struct IPAIndependentApp: Codable, Identifiable {
     let name: String
     let openURL: URL
     let installedAt: Date
+    let version: String?
 }
 
 struct IPAIdentityReview: Identifiable {
@@ -146,9 +147,9 @@ struct IPAIdentityReview: Identifiable {
     private var retry: (() -> Void)?
     var busy: Bool { activeID != nil || jobs.contains { !$0.terminal } }
     func job(_ id: String) -> IPAInstallationJob? { jobs.first { $0.id == id && !$0.terminal } }
-    func job(for variant: IPAAppVariant) -> IPAInstallationJob? {
-        job(variant.id) ?? jobs.first {
-            !$0.terminal && $0.variant.store.id == variant.store.id &&
+    func job(for variant: IPAAppVariant, independent: Bool) -> IPAInstallationJob? {
+        job(IPAInstallationJob.identifier(variant, independent: independent)) ?? jobs.first {
+            !$0.terminal && $0.independent == independent && $0.variant.store.id == variant.store.id &&
             $0.variant.app.bundleIdentifier.caseInsensitiveCompare(variant.app.bundleIdentifier) == .orderedSame
         }
     }
@@ -159,7 +160,9 @@ struct IPAIdentityReview: Identifiable {
         let signing = IPASigningState()
         if independent {
             if signing.standaloneCertificateReady { return nil }
-            if signing.certificateImported && !signing.accountSaved { return .certificateProfile }
+            if signing.selectedCertificateID != IPAStandaloneCertificates.legacyID || (signing.certificateImported && !signing.accountSaved) {
+                return .certificateProfile
+            }
             if !signing.serviceAvailable || !signing.capabilitiesReady || !signing.accountSaved || !signing.pairingImported { return .independentSetup }
         } else if !signing.containerCertificateAvailable { return .signing }
         return nil
@@ -168,10 +171,10 @@ struct IPAIdentityReview: Identifiable {
         Task { await IPASigningState.restoreAfterUpdateIfNeeded(); startPrepared(variant, independent: independent) }
     }
     private func startPrepared(_ variant: IPAAppVariant, independent: Bool) {
-        if job(variant.id) != nil { return }
+        if job(for: variant, independent: independent) != nil { return }
         // Feedback appears before expensive certificate checks or preparation.
-        jobs.removeAll { $0.id == variant.id }
         let job = IPAInstallationJob(variant: variant, independent: independent)
+        jobs.removeAll { $0.id == job.id }
         jobs.append(job)
         job.task = Task {
             await Task.yield()
@@ -214,6 +217,7 @@ struct IPAIdentityReview: Identifiable {
     func pause(_ id: String, paused: Bool) {
         guard let job = job(id), job.downloading, !job.cancelling else { return }
         job.paused = paused; job.status = paused ? "Paused" : "Downloading…"
+        job.resetEstimate()
         job.transfer?.setPaused(paused); objectWillChange.send()
     }
     func showFailure(_ id: String) {
@@ -322,9 +326,8 @@ struct IPAIdentityReview: Identifiable {
             Task { @MainActor in
                 guard let self else { return }
                 if let job {
-                    guard job.downloading, !job.cancelling else { return }
-                    job.received = update.received; job.expected = update.expected
-                    job.fraction = update.expected > 0 ? min(1, max(0, Double(update.received) / Double(update.expected))) : nil
+                    guard job.downloading, !job.paused, !job.cancelling else { return }
+                    job.record(update)
                 } else if update.expected > 0 { self.fraction = Double(update.received) / Double(update.expected) * 0.4 }
             }
         }
@@ -569,14 +572,16 @@ struct IPAIdentityReview: Identifiable {
             throw IPAInstallIssue(title: "Check Your Home Screen", message: "The installer didn’t return a verifiable launch address. Check whether the app was installed before trying again.", action: .none)
         }
         independentApps.removeAll { $0.identifier == identifier }
-        independentApps.append(IPAIndependentApp(identifier: identifier, resignedIdentifier: resigned, name: name, openURL: openURL, installedAt: Date()))
+        independentApps.append(IPAIndependentApp(identifier: identifier, resignedIdentifier: resigned, name: name, openURL: openURL, installedAt: Date(), version: currentVariant?.app.latestVersion?.version))
         if let variant = currentVariant { IPAActivityHistory.shared.downloaded(variant) }
         else { IPAActivityHistory.shared.imported(identifier: identifier, name: name, version: nil) }
         saveIndependent(); recordInstalledIdentity(identifier); status = "Installed"
     }
     private func installCertificateBundle(_ bundle: URL, identifier: String) async throws {
         let fm = FileManager.default
-        guard let profile = IPASigningState.savedProfile else { throw IPAInstallIssue.certificateProfile }
+        let certificateID = IPAStandaloneCertificates.selectedID
+        guard let credential = IPAStandaloneCertificates.credential(for: certificateID),
+              let profile = IPAStandaloneCertificates.profile(for: certificateID) else { throw IPAInstallIssue.certificateProfile }
         let plugins = bundle.appendingPathComponent("PlugIns")
         let children = (try? fm.contentsOfDirectory(at: plugins, includingPropertiesForKeys: nil)) ?? []
         if !children.isEmpty {
@@ -605,7 +610,7 @@ struct IPAIdentityReview: Identifiable {
         try PropertyListSerialization.data(fromPropertyList: info, format: .binary, options: 0).write(to: infoURL, options: .atomic)
         status = "Signing for iPhone…"
         let signed: (Bool, Error?) = await withCheckedContinuation { reply in
-            let child = LCUtils.signStandaloneBundle(bundle, profile: profile) { reply.resume(returning: ($0, $1)) }
+            let child = LCUtils.signStandaloneBundle(bundle, profile: profile, certificate: credential.data, password: credential.password) { reply.resume(returning: ($0, $1)) }
             if let child { progress?.addChild(child, withPendingUnitCount: 150) }
         }
         guard signed.0 else { throw signed.1 ?? IPAInstallIssue.signing }
@@ -638,7 +643,7 @@ struct IPAIdentityReview: Identifiable {
         }
         guard confirmed else { throw CancellationError() }
         independentApps.removeAll { $0.identifier == identifier }
-        independentApps.append(IPAIndependentApp(identifier: identifier, resignedIdentifier: identifier, name: name, openURL: openURL, installedAt: Date()))
+        independentApps.append(IPAIndependentApp(identifier: identifier, resignedIdentifier: identifier, name: name, openURL: openURL, installedAt: Date(), version: info["CFBundleShortVersionString"] as? String))
         saveIndependent(); recordInstalledIdentity(identifier)
         if let variant = currentVariant { IPAActivityHistory.shared.downloaded(variant) }
         else { IPAActivityHistory.shared.imported(identifier: identifier, name: name, version: info["CFBundleShortVersionString"] as? String) }

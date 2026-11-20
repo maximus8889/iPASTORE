@@ -117,6 +117,10 @@ struct LCTabView: View {
             }
             
             switch host {
+            case "widget-apps":
+                guard url.scheme?.lowercased() == "ipastore" else { return }
+                sharedModel.selectedTab = .apps
+                return
             case "livecontainer-launch", "install", "open-web-page", "open-url":
                 sharedModel.selectedTab = .apps
             case "ipastore-return":

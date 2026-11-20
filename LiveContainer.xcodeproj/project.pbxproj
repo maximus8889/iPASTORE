@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		A13400000000000000000001 /* AppCategories.json in Resources */ = {isa = PBXBuildFile; fileRef = A13400000000000000000002; };
+		4A1C5600142D43FD805E2FC2 /* SuccessBell.wav in Resources */ = {isa = PBXBuildFile; fileRef = 4A1C5600142D43FD805E2FC1; };
+		4A1C5600142D43FD805E2FC4 /* SuccessDrop.wav in Resources */ = {isa = PBXBuildFile; fileRef = 4A1C5600142D43FD805E2FC3; };
 		A13400000000000000000003 /* Success.wav in Resources */ = {isa = PBXBuildFile; fileRef = A13400000000000000000004; };
 		173545AF2E2C7913001B3B4C /* SideStoreSupport.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 173545A82E2C7913001B3B4C /* SideStoreSupport.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		17413FBC2D9C0BAE00F3F928 /* LiveContainerSwiftUI.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 17413FB52D9C0BAE00F3F928 /* LiveContainerSwiftUI.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -166,6 +168,8 @@
 
 /* Begin PBXFileReference section */
 		A13400000000000000000002 = {isa = PBXFileReference; lastKnownFileType = text.json; path = "Resources/AppCategories.json"; sourceTree = "<group>"; };
+		4A1C5600142D43FD805E2FC1 /* SuccessBell.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = "Resources/SuccessBell.wav"; sourceTree = "<group>"; };
+		4A1C5600142D43FD805E2FC3 /* SuccessDrop.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = "Resources/SuccessDrop.wav"; sourceTree = "<group>"; };
 		A13400000000000000000004 = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = "Resources/Success.wav"; sourceTree = "<group>"; };
 		172978E8302EAF07004A3E78 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		172CA8542D9D721700CF6989 /* dyld_bypass_validation.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = dyld_bypass_validation.m; sourceTree = "<group>"; };
@@ -930,6 +934,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				A13400000000000000000001,
+				4A1C5600142D43FD805E2FC2 /* SuccessBell.wav in Resources */,
+				4A1C5600142D43FD805E2FC4 /* SuccessDrop.wav in Resources */,
 				A13400000000000000000003,
 				D4789D96F302D1F5DA0ECCDC,
 				F7B9F63C284BF0DE0E91DC6F,
@@ -1628,7 +1634,7 @@
 			baseConfigurationReferenceRelativePath = LiveContainer.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconLight AppIconMidnight";
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconLight AppIconMidnight AppIconOcean AppIconJade AppIconIris AppIconEmber AppIconSand AppIconRose";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGNING_ALLOWED = YES;
@@ -1674,7 +1680,7 @@
 			baseConfigurationReferenceRelativePath = LiveContainer.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconLight AppIconMidnight";
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIconLight AppIconMidnight AppIconOcean AppIconJade AppIconIris AppIconEmber AppIconSand AppIconRose";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGNING_ALLOWED = YES;

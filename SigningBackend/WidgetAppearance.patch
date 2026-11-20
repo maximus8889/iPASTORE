@@ -1,0 +1,293 @@
+--- a/AltWidget/Widgets/ActiveAppsWidget.swift
++++ b/AltWidget/Widgets/ActiveAppsWidget.swift
+@@ -14,8 +14,8 @@
+ private extension Color
+ {
+-    static let altGradientLight = Color.init(.displayP3, red: 219.0/255.0, green: 38.0/255.0, blue: 200.0/255.0)
+-    static let altGradientDark = Color.init(.displayP3, red: 135.0/255.0, green: 22.0/255.0, blue: 232.0/255.0)
+-    
+-    static let altGradientExtraDark = Color.init(.displayP3, red: 58.0/255.0, green: 8.0/255.0, blue: 135.0/255.0)
++    static let altGradientLight = Color.init(.displayP3, red: 41.0/255.0, green: 113.0/255.0, blue: 133.0/255.0)
++    static let altGradientDark = Color.init(.displayP3, red: 25.0/255.0, green: 68.0/255.0, blue: 92.0/255.0)
++    
++    static let altGradientExtraDark = Color.init(.displayP3, red: 18.0/255.0, green: 35.0/255.0, blue: 57.0/255.0)
+ }
+ 
+@@ -53,5 +53,5 @@
+             }
+             .supportedFamilies([.systemMedium])
+-            .configurationDisplayName("Active Apps")
++            .configurationDisplayName("iPAStore Active Apps")
+             .description("View remaining days until your active apps expire. Tap the countdown timers to refresh them in the background.")
+             
+@@ -64,5 +64,5 @@
+             }
+             .supportedFamilies([.systemMedium])
+-            .configurationDisplayName("Active Apps")
++            .configurationDisplayName("iPAStore Active Apps")
+             .description("Requires iOS 17 or later.")
+         }
+@@ -93,4 +93,5 @@
+             }
+         }
++        .widgetURL(URL(string: "ipastore://widget-apps"))
+         .foregroundStyle(.white)
+         .containerBackground(for: .widget) {
+@@ -118,8 +119,8 @@
+                 let itemsPerPage = ActiveAppsWidget.Constants.MAX_ROWS_PER_PAGE
+                 
+-                let preferredRowHeight = (geometry.size.height / Double(itemsPerPage)) - 8
++                let preferredRowHeight = (geometry.size.height - 16) / CGFloat(itemsPerPage)
+                 let rowHeight = min(preferredRowHeight, geometry.size.height / 2)
+ 
+-                LazyVStack(spacing: 12) {
++                LazyVStack(spacing: 8) {
+                     ForEach(Array(entry.apps.enumerated()), id: \.offset) { index, app in
+                     
+@@ -156,5 +157,5 @@
+                                     .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                 
+-                                let text = if entry.date > app.expirationDate
++                                let text = if entry.date >= app.expirationDate
+                                 {
+                                     Text("Expired")
+@@ -167,5 +168,5 @@
+                                 text
+                                     .font(.system(size: 13, weight: .semibold, design: .rounded))
+-                                    .foregroundStyle(.secondary)
++                                    .foregroundStyle(daysRemaining <= 1 ? Color.yellow : Color.white.opacity(0.75))
+                             }
+                             .widgetAccentableIfAvailable()
+@@ -200,8 +201,8 @@
+                 
+                 VStack {
+-                    Image(systemName: "arrow.up")
++                    Image(systemName: "chevron.up.circle.fill")
+                         .resizable()
+                         .frame(width: buttonWidth, height: buttonWidth)
+-                        .opacity(0.3)
++                        .opacity(0.7)
+                         // .mask(Capsule())
+                         .pageUpButton(widgetID, widgetKind)
+@@ -209,8 +210,8 @@
+                     Spacer()
+                     
+-                    Image(systemName: "arrow.down")
++                    Image(systemName: "chevron.down.circle.fill")
+                         .resizable()
+                         .frame(width: buttonWidth, height: buttonWidth)
+-                        .opacity(0.3)
++                        .opacity(0.7)
+                         // .mask(Capsule())
+                         .pageDownButton(widgetID, widgetKind)
+@@ -228,9 +229,9 @@
+     private var placeholder: some View {
+         VStack(spacing: 4) {
+-            Text("Open SideStore")
++            Text("Open iPAStore")
+                 .font(.system(.body, design: .rounded))
+                 .fontWeight(.semibold)
+                 .foregroundColor(Color.white.opacity(0.8))
+-            Text("Launch app to update widget")
++            Text("App expiration dates appear here after signing.")
+                 .font(.system(.caption, design: .rounded))
+                 .foregroundColor(Color.white.opacity(0.5))
+--- a/AltWidget/Widgets/AppDetailWidget.swift
++++ b/AltWidget/Widgets/AppDetailWidget.swift
+@@ -33,5 +33,5 @@
+             }
+             .supportedFamilies([.systemSmall])
+-            .configurationDisplayName("App Status")
++            .configurationDisplayName("iPAStore App Status")
+             .description("View remaining days until your sideloaded apps expire. Tap the countdown timer to refresh them in the background.")
+             .contentMarginsDisabled()
+@@ -48,5 +48,5 @@
+             }
+             .supportedFamilies([.systemSmall])
+-            .configurationDisplayName("App Status")
++            .configurationDisplayName("iPAStore App Status")
+             .description("View remaining days until your sideloaded apps expire. Tap the countdown timer to refresh them in the background.")
+         }
+@@ -74,5 +74,5 @@
+                                 AppIconView(icon: app.icon, imageHeight: imageHeight)
+                                 
+-                                Text(app.name.uppercased())
++                                Text(app.name)
+                                     .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                     .foregroundColor(.white)
+@@ -89,5 +89,5 @@
+                                     switch daysRemaining
+                                     {
+-                                    case ..<0: return Text("Expired")
++                                    case _ where date >= app.expirationDate: return Text("Expired")
+                                     case 1: return Text("1 day")
+                                     default: return Text("\(daysRemaining) days")
+@@ -95,13 +95,11 @@
+                                 }()
+                                 
+-                                (
+-                                    Text("Expires in\n")
+-                                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+-                                        .foregroundColor(Color.white.opacity(0.45)) +
+-                                    
+-                                    expirationText
+-                                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+-                                        .foregroundColor(.white)
+-                                )
++                                VStack(alignment: .leading, spacing: 2) {
++                                    Text(date >= app.expirationDate ? "Signing status" : "Expires in")
++                                        .font(.caption2)
++                                        .foregroundStyle(.white.opacity(0.75))
++                                    expirationText.font(.system(.headline, design: .rounded).monospacedDigit())
++                                        .foregroundStyle(daysRemaining <= 1 ? Color.yellow : .white)
++                                }
+                                 .lineLimit(2)
+                                 .lineSpacing(1.0)
+@@ -110,5 +108,5 @@
+                                 Spacer()
+                                 
+-                                if daysRemaining >= 0
++                                if date < app.expirationDate
+                                 {
+                                     Countdown(startDate: app.refreshedDate,
+@@ -134,9 +132,9 @@
+             {
+                 VStack(spacing: 4) {
+-                    Text("Open SideStore")
++                    Text("Open iPAStore")
+                         .font(.system(.subheadline, design: .rounded))
+                         .fontWeight(.semibold)
+                         .foregroundColor(Color.white.opacity(0.8))
+-                    Text("Launch app to update widget")
++                    Text("Sign an app to see its expiration here.")
+                         .font(.system(.caption2, design: .rounded))
+                         .foregroundColor(Color.white.opacity(0.5))
+@@ -148,10 +146,6 @@
+             }
+         }
+-        .widgetBackground(
+-            backgroundView(
+-                icon: apps.first?.icon,
+-                tintColor: apps.first?.tintColor
+-            )
+-        )
++        .widgetURL(URL(string: "ipastore://widget-apps"))
++        .widgetBackground(backgroundView())
+         .onAppear {
+             debugLog("[AppDetailWidgetView] onAppear: isPlaceholder=\(isPlaceholder), appsCount=\(apps.count), firstApp=\(apps.first?.name ?? "none"), date=\(date)")
+@@ -159,48 +153,16 @@
+     }
+ 
+-    func backgroundView(icon: UIImage? = nil, tintColor: UIColor? = nil) -> some View
+-    {
+-        let defaultIcon = UIImage(named: "SideStore") ?? UIImage(systemName: "app.fill")!
+-        let icon = icon ?? defaultIcon
+-        let tintColor = tintColor ?? .gray
+-        
+-        let imageHeight = 60 as CGFloat
+-        let saturation = 1.8
+-        let blurRadius = 5 as CGFloat
+-        let tintOpacity = 0.45
+-        
+-        // 1024x1024 images are not supported by previews but supported by device
+-        // so we scale the image to 97% so as to reduce its actual size but not too much
+-        // to somewhere below value, acceptable by previews ie < 1042x948
+-        let scalingFactor = 0.97
+-        
+-        let resizedSize = CGSize(
+-            width:  icon.size.width * scalingFactor,
+-            height: icon.size.height * scalingFactor
++    func backgroundView() -> some View {
++        LinearGradient(
++            colors: [Color(red: 0.16, green: 0.45, blue: 0.53), Color(red: 0.07, green: 0.14, blue: 0.22)],
++            startPoint: .topLeading,
++            endPoint: .bottomTrailing
+         )
+-            
+-        let resizedIcon = icon.resizing(to: resizedSize) ?? icon
+-        
+-        return ZStack(alignment: .topTrailing) {
+-            // Blurred Image
+-            GeometryReader { geometry in
+-                ZStack {
+-                    Image(uiImage: resizedIcon)
+-                        .resizable()
+-                        .aspectRatio(contentMode: .fill)
+-                        .frame(width: imageHeight, height: imageHeight, alignment: .center)
+-                        .saturation(saturation)
+-                        .blur(radius: blurRadius, opaque: true)
+-                        .scaleEffect(geometry.size.width / imageHeight, anchor: .center)
+-                    
+-                    Color(tintColor)
+-                        .opacity(tintOpacity)
+-                }
+-            }
+-            
+-            Image("Badge")
+-                .resizable()
+-                .frame(width: 26, height: 26)
+-                .padding()
++        .overlay(alignment: .topTrailing) {
++            Image(systemName: "checkmark.seal")
++                .font(.system(size: 22, weight: .medium))
++                .foregroundStyle(.white.opacity(0.5))
++                .padding(16)
++                .accessibilityHidden(true)
+         }
+     }
+--- a/AltWidget/Widgets/LockScreenWidget.swift
++++ b/AltWidget/Widgets/LockScreenWidget.swift
+@@ -27,6 +27,6 @@
+             }
+             .supportedFamilies([.accessoryCircular])
+-            .configurationDisplayName("AltWidget (Text)")
+-            .description("View remaining days until SideStore expires.")
++            .configurationDisplayName("iPAStore Days Left")
++            .description("See when a signed app expires.")
+         }
+         else
+@@ -36,5 +36,5 @@
+             }
+             .supportedFamilies([.systemSmall])
+-            .configurationDisplayName("AltWidget (Text)")
++            .configurationDisplayName("iPAStore Days Left")
+             .description("Requires iOS 16 or later.")
+         }
+@@ -59,6 +59,6 @@
+             }
+             .supportedFamilies([.accessoryCircular])
+-            .configurationDisplayName("AltWidget (Icon)")
+-            .description("View remaining days until SideStore expires.")
++            .configurationDisplayName("iPAStore Expiration")
++            .description("See when a signed app expires.")
+         }
+         else
+@@ -68,5 +68,5 @@
+             }
+             .supportedFamilies([.systemSmall])
+-            .configurationDisplayName("AltWidget (Icon)")
++            .configurationDisplayName("iPAStore Expiration")
+             .description("Requires iOS 16 or later.")
+         }
+@@ -99,7 +99,6 @@
+         let daysRemaining = expirationDate.numberOfCalendarDays(since: self.date)
+         
+-        let progress = totalDays > 0 ? Double(daysRemaining) / Double(totalDays) : 0.0
++        let progress = totalDays > 0 ? min(1, max(0, Double(daysRemaining) / Double(totalDays))) : 0
+         
+-        // TODO: Gauge initialized with an out-of-bounds progress amount. The amount will be clamped to the nearest bound.
+         Gauge(value: progress) {
+             if self.apps.isEmpty
+@@ -132,5 +131,5 @@
+                 }
+             }
+-            else if daysRemaining < 0
++            else if date >= expirationDate
+             {
+                 Text("Expired")
+@@ -178,4 +177,5 @@
+         }
+         .gaugeStyle(.accessoryCircularCapacity)
++        .widgetURL(URL(string: "ipastore://widget-apps"))
+         .unredacted()
+         .widgetBackground(Color.clear)

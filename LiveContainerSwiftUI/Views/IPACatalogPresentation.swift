@@ -116,13 +116,12 @@ enum IPACatalogPresentation {
         guard entries.count > 1 else { return [all] }
         let entertainment = Set(["Entertainment", "Music", "Photo & Video", "Social", "Social Networking", "Sports", "Books", "News", "Magazines & Newspapers"])
         let utilities = Set(["Utilities", "Developer Tools", "Productivity", "Business", "Weather", "Travel", "Reference", "Navigation", "Lifestyle", "Health & Fitness", "Finance", "Education", "Medical", "Food & Drink", "Shopping", "Graphics & Design"])
-        return [
+        let additional = categories(entries.filter { !utilities.contains($0.category) && !entertainment.contains($0.category) && $0.category != "Games" })
+        return ([
             IPAAppCategory(name: "Entertainment", apps: entries.filter { entertainment.contains($0.category) }),
             IPAAppCategory(name: "Utilities", apps: entries.filter { utilities.contains($0.category) }),
-            IPAAppCategory(name: "Games", apps: entries.filter { $0.category == "Games" }),
-            // Preserve every publisher app, including categories outside these shelves.
-            all
-        ].filter { !$0.apps.isEmpty }
+            IPAAppCategory(name: "Games", apps: entries.filter { $0.category == "Games" })
+        ] + additional + [all]).filter { !$0.apps.isEmpty }
     }
     static func libraries(subscribed: [AltStoreSourcesViewModel.SourceItem], discovered: [String: AltStoreSource]) -> [(IPAStoreReference, AltStoreSource?)] {
         let added = Set(subscribed.map { IPAStoreDirectory.canonical($0.url) })
@@ -397,6 +396,7 @@ struct IPASearchDocument {
         guard !Task.isCancelled, generation == token else { return [] }
         return rows
     }
+    func waitForRebuild() async { await worker?.value }
     func entry(identifier: String) -> IPAAppEntry? { byIdentifier[identifier.lowercased()] }
     func rebuild(subscribed: [AltStoreSourcesViewModel.SourceItem], discovered: [String: AltStoreSource]) {
         let libraries = IPACatalogPresentation.libraries(subscribed: subscribed, discovered: discovered)

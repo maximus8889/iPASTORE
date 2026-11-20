@@ -59,7 +59,10 @@ struct IPARootTabs: View {
         scenePhase == .active && guestSession.active == nil
         #endif
     }
-    init() { IPAAppearance.registerFonts() }
+    init() {
+        IPAAppearance.registerFonts()
+        UINavigationBar.appearance().tintColor = .label
+    }
     @AppStorage("IPAAccentHex") private var accentHex = "systemBlue"
     @AppStorage("IPAAppearance") private var appearance = "system"
     var body: some View {
@@ -191,7 +194,7 @@ struct IPAGetButton: View {
     private var opening: Bool { installer.openingIdentifier == installedIdentifier }
     var body: some View {
         ZStack {
-            if let job = installer.job(for: variant) {
+            if let job = installer.job(for: variant, independent: mode == "independent") {
                 IPAJobProgressButton(job: job, showsStatus: showsStatus)
                     .frame(maxWidth: showsStatus ? 140 : nil)
                     .transition(IPAMotion.reveal(reduced: reduceMotion))
@@ -216,7 +219,7 @@ struct IPAGetButton: View {
             }
         }.frame(minWidth: 66)
             .animation(IPAMotion.state(reduced: reduceMotion), value: installed)
-            .animation(IPAMotion.state(reduced: reduceMotion), value: installer.job(for: variant)?.id)
+            .animation(IPAMotion.state(reduced: reduceMotion), value: installer.job(for: variant, independent: mode == "independent")?.id)
             .animation(IPAMotion.state(reduced: reduceMotion), value: opening)
     }
 }
@@ -224,6 +227,7 @@ struct IPAGetButton: View {
 struct IPAAppRow: View {
     let entry: IPAAppEntry
     var onVisit: (() -> Void)? = nil
+    var descriptionLines = 1
     var body: some View {
         HStack(spacing: 12) {
             NavigationLink { IPAProductView(entry: entry) } label: {
@@ -231,7 +235,11 @@ struct IPAAppRow: View {
                     IPAArtwork(url: entry.app.iconURL, size: 60, identifier: entry.app.bundleIdentifier)
                     VStack(alignment: .leading, spacing: 4) {
                         Text(entry.app.name).ipaFont(.headline, weight: .semibold).foregroundStyle(.primary).lineLimit(1).truncationMode(.tail)
-                        Text(entry.app.subtitle ?? entry.app.developerName ?? "").ipaFont(.subheadline).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail)
+                        if let subtitle = IPACatalogPresentation.displayValue(entry.app.subtitle)
+                            ?? IPACatalogPresentation.displayValue(entry.app.description)
+                            ?? IPACatalogPresentation.displayValue(entry.app.developerName) {
+                            Text(subtitle).ipaFont(.subheadline).foregroundStyle(.secondary).lineLimit(descriptionLines)
+                        }
                     }.frame(maxWidth: .infinity, alignment: .leading)
                 }.contentShape(Rectangle())
             }.buttonStyle(IPAControlPressStyle(scale: 0.985)).simultaneousGesture(TapGesture().onEnded { onVisit?() })
@@ -242,12 +250,15 @@ struct IPAAppRow: View {
 
 struct IPACategoryShelves: View {
     let categories: [IPAAppCategory]
-    var title: String? = nil
+    let title: String?
+    let library: IPAStoreReference?
     init(entries: [IPAAppEntry], title: String? = nil) {
-        self.categories = IPACatalogPresentation.categories(entries); self.title = title
+        self.init(categories: IPACatalogPresentation.categories(entries), title: title)
     }
-    init(categories: [IPAAppCategory], title: String? = nil) {
-        self.categories = categories; self.title = title
+    init(categories: [IPAAppCategory], title: String? = nil, library: IPAStoreReference? = nil) {
+        self.categories = categories
+        self.title = title
+        self.library = library
     }
     var body: some View {
         // Only a handful of bounded shelves: keep their heights resolved rather
@@ -255,7 +266,7 @@ struct IPACategoryShelves: View {
         VStack(alignment: .leading, spacing: 28) {
             if let title { Text(title).ipaFont(.title2, weight: .bold) }
             ForEach(categories) { category in
-                IPACategoryShelf(category: category)
+                IPACategoryShelf(category: category, library: category.name == "All Apps" ? library : nil)
             }
         }
     }
@@ -263,13 +274,17 @@ struct IPACategoryShelves: View {
 
 struct IPACategoryShelf: View {
     let category: IPAAppCategory
+    var library: IPAStoreReference? = nil
     @ScaledMetric(relativeTo: .body) private var rowHeight = 82.0
     private var pages: [[IPAAppEntry]] {
         IPACatalogPresentation.shelfPages(category.apps)
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            NavigationLink { IPACategoryView(category: category) } label: {
+            NavigationLink {
+                if let library { IPAStoreAllAppsView(reference: library) }
+                else { IPACategoryView(category: category) }
+            } label: {
                 HStack(spacing: 6) { Text(category.name).ipaFont(.title3, weight: .bold); Image(systemName: "chevron.right").ipaFont(.subheadline, weight: .semibold).foregroundStyle(.tertiary) }.foregroundStyle(.primary)
             }.buttonStyle(.plain).accessibilityLabel(category.name == "All Apps" ? "All Apps" : "All \(category.name)")
             if category.apps.isEmpty {
@@ -279,7 +294,7 @@ struct IPACategoryShelf: View {
                     ScrollView(.horizontal) {
                         // Fixed page geometry keeps vertical layout stable while
                         // offscreen pages defer their icon and button work.
-                        LazyHStack(alignment: .top, spacing: 20) {
+                        LazyHStack(alignment: .top, spacing: 14) {
                             ForEach(Array(pages.enumerated()), id: \.offset) { index, page in
                                 VStack(spacing: 0) {
                                     ForEach(page) { entry in
@@ -287,13 +302,14 @@ struct IPACategoryShelf: View {
                                         if entry.id != page.last?.id { Divider().padding(.leading, 72) }
                                     }
                                     Spacer(minLength: 0)
-                                }.frame(width: max(220, geometry.size.width - 34), height: rowHeight * CGFloat(min(3, category.apps.count)) + 4, alignment: .topLeading)
+                                }.frame(width: max(1, geometry.size.width - (pages.count > 1 ? 20 : 0)), height: rowHeight * CGFloat(min(3, category.apps.count)) + 4, alignment: .topLeading)
                                     .accessibilityElement(children: .contain)
                                     .accessibilityLabel("\(category.name), page \(index + 1)")
                             }
 
                         }.scrollTargetLayout()
-                    }.scrollIndicators(.hidden).scrollTargetBehavior(.viewAligned).scrollClipDisabled()
+                    }.contentMargins(.trailing, pages.count > 1 ? 20 : 0, for: .scrollContent)
+                        .scrollIndicators(.hidden).scrollTargetBehavior(.viewAligned(limitBehavior: .always))
                 }.frame(height: rowHeight * CGFloat(min(3, category.apps.count)) + 4)
             }
         }
@@ -312,7 +328,7 @@ struct IPACategoryView: View {
         ScrollView {
             LazyVStack(spacing: 0) {
                 if results.isEmpty { IPAEmptyState(title: query.isEmpty ? "No Apps Yet" : "No Results", subtitle: query.isEmpty ? "Apps in this category will appear here as the library updates." : "Try another app or developer name.", symbol: query.isEmpty ? "square.stack.3d.up" : "magnifyingglass") }
-                IPAPagedAppRows(entries: results).id(query + "|" + order)
+                IPAPagedAppRows(entries: results, cards: true).id(query + "|" + order)
             }.padding(.horizontal, 20).padding(.bottom, 24).frame(maxWidth: 760).frame(maxWidth: .infinity)
         }.task(id: query + "|" + order) {
             let text = query, sorting = order, snapshot = category.apps, existing = prepared
@@ -334,7 +350,8 @@ struct IPACategoryView: View {
                 Menu {
                     Button("Search", systemImage: "magnifyingglass") { searching = true }
                     Picker("Sort", selection: $order) { Text("Library Order").tag("publisher"); Text("Name").tag("name"); Text("Developer").tag("developer") }
-                } label: { Image(systemName: "arrow.up.arrow.down") }.accessibilityLabel("Sort and search apps")
+                } label: { Image(systemName: "ellipsis.circle") }
+                    .tint(.primary).accessibilityLabel("Sort and search apps")
             } }
     }
 }
@@ -358,7 +375,9 @@ struct IPATodayView: View {
                             let source = discovery.sources[suggested.id]
                             let entries = libraryIndex.entries(reference: reference, source: source)
                             IPAFeaturedLibrary(reference: reference, source: source).id(reference.id)
-                            if !entries.isEmpty { IPACategoryShelves(categories: libraryIndex.browsingCategories(reference: reference, source: source), title: "Worth Exploring") }
+                            if !entries.isEmpty {
+                                IPACategoryShelf(category: .init(name: "Apps Inside This Library", apps: entries), library: reference)
+                            }
                             else if discovery.loading || source?.apps.isEmpty != true { ProgressView(source == nil ? "Loading this library…" : "Preparing apps…").ipaFont(.subheadline).frame(maxWidth: .infinity).padding(.vertical) }
                             else { Button("Reload This Library") { Task { await discovery.load(force: true) } }.frame(maxWidth: .infinity) }
                         } else if discovery.loading {
@@ -454,6 +473,8 @@ struct IPAStoresView: View {
     @State private var query = ""
     @State private var searching = false
     @State private var arranging = false
+    @State private var sorting = false
+    @State private var showingArrangement = false
     @AppStorage("IPASourceSort") private var sourceSort = "manual"
     @AppStorage("IPASourceOrder") private var sourceOrder = "[]"
     private var orderedSources: [AltStoreSourcesViewModel.SourceItem] {
@@ -467,7 +488,6 @@ struct IPAStoresView: View {
         }.map(\.element)
     }
     @State private var refreshDetails = false
-    @State private var attentionDismissed = false
     private var failedSources: [AltStoreSourcesViewModel.SourceItem] { catalog.sources.filter { $0.error != nil } }
     @State private var adding = false
     @State private var failure: String?
@@ -475,6 +495,18 @@ struct IPAStoresView: View {
         NavigationStack(path: $path) {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Stores").ipaFont(.largeTitle, weight: .bold).accessibilityAddTraits(.isHeader)
+                        if failedSources.isEmpty {
+                            Text(catalog.sources.count == 1 ? "1 store" : "\(catalog.sources.count) stores")
+                                .ipaFont(.subheadline).foregroundStyle(.secondary)
+                        } else {
+                            Button { refreshDetails = true } label: {
+                                Label(failedSources.count == 1 ? "1 store needs attention" : "\(failedSources.count) stores need attention",
+                                      systemImage: "exclamationmark.circle").ipaFont(.subheadline)
+                            }.buttonStyle(.plain).foregroundStyle(.secondary)
+                        }
+                    }.frame(maxWidth: .infinity, alignment: .leading)
                     if catalog.sources.isEmpty {
                         VStack(spacing: 14) {
                             Image(systemName: IPAStyle.storeSymbol).font(.system(size: 48, weight: .light)).foregroundStyle(.secondary).accessibilityHidden(true)
@@ -482,54 +514,57 @@ struct IPAStoresView: View {
                             Text("Add some in Suggestions.").ipaFont(.subheadline).foregroundStyle(.secondary)
                         }.multilineTextAlignment(.center).frame(maxWidth: .infinity).padding(.top, 105)
                     }
-                    if !attentionDismissed && !failedSources.isEmpty {
-                        Button { refreshDetails = true } label: {
-                            Label("\(failedSources.count) \(failedSources.count == 1 ? "library needs" : "libraries need") attention", systemImage: "exclamationmark.circle")
-                                .ipaFont(.footnote).frame(maxWidth: .infinity, alignment: .leading)
-                        }.accessibilityHint("View the reason and retry. Saved apps remain available.")
-                    }
                     ForEach(orderedSources) { item in
                         VStack(alignment: .leading, spacing: 8) {
                             IPALibraryCard(reference: IPAStoreReference(item), source: item.source, subtitle: item.source.map { "\($0.apps.count) \($0.apps.count == 1 ? "app" : "apps")" } ?? (item.error == nil ? "App library" : "Unavailable · see update details"))
 
                         }.contextMenu {
-                            Button("Refresh", systemImage: "arrow.clockwise") { attentionDismissed = false; Task { await catalog.refreshSource(item) } }
+                            Button("Refresh", systemImage: "arrow.clockwise") { Task { await catalog.refreshSource(item) } }
                             if item.error != nil { Button("Update Details", systemImage: "exclamationmark.circle") { refreshDetails = true } }
                             Button("Remove Library", systemImage: "trash", role: .destructive) { catalog.removeSource(item) }
                         }
                     }
                 }.padding(20).padding(.bottom, 20).frame(maxWidth: 760).frame(maxWidth: .infinity)
-            }.background(IPAStyle.canvas).navigationTitle("Stores").navigationBarTitleDisplayMode(.large)
+            }.background(IPAStyle.canvas).navigationTitle("").navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .topBarLeading) { Button { suggestions = true } label: { Image(systemName: "sparkles") }.accessibilityLabel("Suggestions").accessibilityHint("Discover app libraries") }
                     ToolbarItem(placement: .topBarTrailing) {
                         Menu {
-                            Button("Search", systemImage: "magnifyingglass") { searching = true }
-                            Divider()
-                            Picker("Sort By", selection: $sourceSort) {
-                                Label("My Order", systemImage: "line.3.horizontal").tag("manual")
-                                Label("Name", systemImage: "textformat.abc").tag("name")
-                            }
-                            Button("Arrange", systemImage: "line.3.horizontal") { query = ""; searching = false; sourceSort = "manual"; arranging = true }
-                            Divider()
-                            Button("Refresh", systemImage: "arrow.clockwise") { attentionDismissed = false; Task { await catalog.refreshAllSources() } }
                             Button("Add", systemImage: "plus") { adding = true }
-                        } label: { Label("Sort and Search Libraries", systemImage: "arrow.up.arrow.down") }
-                            .font(.system(.body)).fontDesign(.default).fontWeight(.regular)
-                            .accessibilityLabel("Sort and search libraries")
+                            Button("Suggestions", systemImage: "sparkles") { suggestions = true }
+                            Button("Refresh", systemImage: "arrow.clockwise") { Task { await catalog.refreshAllSources() } }
+                            Button("Search", systemImage: "magnifyingglass") { searching = true }
+                            Button("Sort", systemImage: "line.3.horizontal.decrease") { sorting = true }
+                        } label: { Image(systemName: "plus") }
+                            .tint(.primary).accessibilityLabel("Store actions")
                     }
                 }
+                .sheet(isPresented: $sorting, onDismiss: {
+                    if arranging { arranging = false; showingArrangement = true }
+                }) {
+                    NavigationStack {
+                        Form {
+                            Picker("Sort", selection: $sourceSort) {
+                                Text("My Order").tag("manual")
+                                Text("Name").tag("name")
+                            }.pickerStyle(.inline)
+                            Button("Arrange Stores", systemImage: "line.3.horizontal") {
+                                query = ""; searching = false; sourceSort = "manual"
+                                arranging = true; sorting = false
+                            }
+                        }.navigationTitle("Sort Stores").navigationBarTitleDisplayMode(.inline)
+                    }.presentationDetents([.medium]).presentationDragIndicator(.visible)
+                }
                 .modifier(IPACollectionSearch(query: $query, presented: $searching, prompt: "Search Libraries"))
-                .sheet(isPresented: $arranging) { IPAArrangeLibraries(items: orderedSources, storedOrder: $sourceOrder) }
+                .sheet(isPresented: $showingArrangement) { IPAArrangeLibraries(items: orderedSources, storedOrder: $sourceOrder) }
                 .sheet(isPresented: $suggestions) { IPASuggestionsSheet() }
                 .navigationDestination(for: IPAStoreReference.self) { IPAStorePage(reference: $0) }
-                .refreshable { attentionDismissed = false; await catalog.refreshAllSources() }
+                .refreshable { await catalog.refreshAllSources() }
         }
         .sheet(isPresented: $refreshDetails) { IPALibraryRefreshDetails() }
         .sheet(isPresented: $adding) { IPAAddStoreSheet() }
         .alert("Unable to Add Library", isPresented: Binding(get: { failure != nil }, set: { if !$0 { failure = nil } })) { Button("OK") { failure = nil } } message: { Text(failure ?? "") }
         .onChange(of: model.selectedTab) { oldTab, newTab in
-            if oldTab == .sources && newTab != .sources { attentionDismissed = true; refreshDetails = false }
+            if oldTab == .sources && newTab != .sources { refreshDetails = false }
         }
         .onChange(of: model.deepLink) { link in
             guard model.selectedTab == .sources, let link, link.host == "source", let components = URLComponents(url: link, resolvingAgainstBaseURL: false), let address = components.queryItems?.first(where: { $0.name == "url" })?.value else { return }
@@ -568,27 +603,40 @@ private struct IPALibraryRefreshDetails: View {
 // UISearchController can retain its native back row over a custom product page.
 // This uses UISearchBar's normal keyboard, clear button and accessibility without
 // installing a search controller on the navigation stack or clearing the query.
-private struct IPACatalogSearchField: UIViewRepresentable {
+struct IPACatalogSearchField: UIViewRepresentable {
     @Binding var text: String
-    func makeCoordinator() -> Coordinator { Coordinator(text: $text) }
+    @Binding var editing: Bool
+    var prompt = "Apps, developers and libraries"
+    var autofocus = false
+    func makeCoordinator() -> Coordinator { Coordinator(text: $text, editing: $editing) }
     func makeUIView(context: Context) -> UISearchBar {
         let bar = UISearchBar()
         bar.searchBarStyle = .minimal
-        bar.placeholder = "Apps, developers and libraries"
+        bar.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        bar.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        bar.placeholder = prompt
         bar.returnKeyType = .search
         bar.searchTextField.autocapitalizationType = .none
         bar.searchTextField.autocorrectionType = .no
-        bar.searchTextField.accessibilityLabel = "Search apps, developers and libraries"
+        bar.searchTextField.accessibilityLabel = prompt
         bar.delegate = context.coordinator
         return bar
     }
     func updateUIView(_ bar: UISearchBar, context: Context) {
         context.coordinator.text = $text
         if bar.text != text { bar.text = text }
+        if autofocus && !context.coordinator.requestedFocus {
+            context.coordinator.requestedFocus = true
+            DispatchQueue.main.async { [weak bar] in bar?.searchTextField.becomeFirstResponder() }
+        }
     }
     final class Coordinator: NSObject, UISearchBarDelegate {
         var text: Binding<String>
-        init(text: Binding<String>) { self.text = text }
+        var editing: Binding<Bool>
+        var requestedFocus = false
+        init(text: Binding<String>, editing: Binding<Bool>) { self.text = text; self.editing = editing }
+        func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) { editing.wrappedValue = true }
+        func searchBarTextDidEndEditing(_ searchBar: UISearchBar) { editing.wrappedValue = false }
         func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) { text.wrappedValue = searchText }
         func searchBarSearchButtonClicked(_ searchBar: UISearchBar) { searchBar.resignFirstResponder() }
     }
@@ -600,6 +648,7 @@ struct IPASearchView: View {
     @EnvironmentObject private var discovery: IPADiscovery
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var query = ""
+    @State private var editingSearch = false
     @State private var results: [IPAAppEntry] = []
     @State private var searching = false
     @ObservedObject private var history = IPAActivityHistory.shared
@@ -619,7 +668,7 @@ struct IPASearchView: View {
                         if index.entries.isEmpty {
                             Text("Libraries are loading. Pull to refresh if they don’t appear.").ipaFont(.subheadline).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, 35)
                         } else { LazyVStack(alignment: .leading, spacing: 12) {
-                            Text("Browse All Apps").ipaFont(.title2, weight: .bold)
+                            Text("Browse").ipaFont(.title2, weight: .medium)
                             IPAPagedAppRows(entries: index.entries).id("browse")
                         } }
                     } else if searching && results.isEmpty {
@@ -633,9 +682,17 @@ struct IPASearchView: View {
                     }
                     }.padding(.horizontal, 20).padding(.bottom, 24).frame(maxWidth: 760).frame(maxWidth: .infinity)
                     } header: {
-                        IPACatalogSearchField(text: $query).frame(height: 52)
-                            .padding(.horizontal, 12).padding(.bottom, 12)
-                            .frame(maxWidth: 760).frame(maxWidth: .infinity)
+                        HStack(spacing: 6) {
+                            IPACatalogSearchField(text: $query, editing: $editingSearch).frame(height: 52)
+                            if editingSearch || !query.isEmpty {
+                                IPACloseSearchButton {
+                                    query = ""
+                                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 12).padding(.bottom, 12)
+                        .frame(maxWidth: 760).frame(maxWidth: .infinity)
                     }
                 }
             }.background(IPAStyle.canvas).navigationTitle("").navigationBarTitleDisplayMode(.inline)
@@ -714,13 +771,14 @@ struct IPAProductView: View {
                         productActions
                     }.frame(minHeight: 118, alignment: .topLeading)
                 }.frame(maxWidth: .infinity, alignment: .leading).padding(.top, 8).padding(.bottom, 20)
-                    .background(GeometryReader { geometry in
-                        Color.clear.preference(key: IPAProductHeaderHidden.self, value: geometry.frame(in: .global).maxY < navigationBoundary)
-                    })
+                    .onGeometryChange(for: Bool.self) { geometry in
+                        geometry.frame(in: .named("productScroll")).maxY < 44
+                    } action: { hidden in
+                        withAnimation(IPAMotion.state(reduced: reduceMotion)) { compactHeader = hidden }
+                    }
                 if !facts.isEmpty {
                     Divider()
                     informationStrip.padding(.vertical, 12)
-                    Divider()
                 }
                 if let notes = releaseNotes {
                     VStack(alignment: .leading, spacing: 12) {
@@ -735,27 +793,23 @@ struct IPAProductView: View {
                     Divider()
                 }
                 if !screenshots.isEmpty {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Text("Preview").ipaFont(.title2, weight: .bold)
-                        IPAProductScreenshots(urls: Array(screenshots.prefix(12)))
-                    }.padding(.vertical, 20)
+                    IPAProductScreenshots(urls: Array(screenshots.prefix(12))).padding(.vertical, 20)
                 }
                 if let description = app.description, !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    if !screenshots.isEmpty { Divider() }
                     IPAExpandableText(text: description, lines: 5).ipaFont(.subheadline).padding(.vertical, 20)
-                    Divider()
                 }
-                NavigationLink { IPAStorePage(reference: variant.store) } label: {
+                NavigationLink { IPAStoreAllAppsView(reference: variant.store, fallback: currentEntry) } label: {
                     HStack(spacing: 12) {
                         Image(systemName: IPAStyle.storeSymbol).ipaFont(.title3)
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("More from \(variant.store.name)").ipaFont(.subheadline, weight: .semibold).lineLimit(2)
+                            Text(variant.store.name).ipaFont(.subheadline, weight: .semibold).lineLimit(2)
                             Text("This app’s library").ipaFont(.caption).foregroundStyle(.secondary)
                         }
                         Spacer(minLength: 8)
                         Image(systemName: "chevron.right").ipaFont(.footnote, weight: .semibold)
                     }.padding(.vertical, 14)
                 }.buttonStyle(IPAControlPressStyle(scale: 0.985)).foregroundStyle(.tint)
-                Divider()
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Information").ipaFont(.title2, weight: .bold).padding(.bottom, 8)
                     if let developer = IPACatalogPresentation.displayValue(app.developerName) { information("Developer", developer) }
@@ -765,13 +819,21 @@ struct IPAProductView: View {
                     if let minimum = IPACatalogPresentation.displayValue(app.latestVersion?.minOSVersion) { information("Compatibility", "\(minimum)+", symbol: "iphone") }
                     if let maximum = IPACatalogPresentation.displayValue(app.latestVersion?.maxOSVersion) { information("Supported Through", maximum, symbol: "iphone") }
                     if let listing, !listing.languages.isEmpty { information("Languages", listing.languages.compactMap { Locale.current.localizedString(forLanguageCode: $0) }.joined(separator: ", ")) }
-                    if let listingURL = listing?.listing { Link(destination: listingURL) { Label("App Store Listing", systemImage: "arrow.up.right").ipaFont(.subheadline) }.padding(.vertical, 8) }
+                    if let listingURL = listing?.listing {
+                        Link(destination: listingURL) {
+                            HStack {
+                                Text("App Store Listing")
+                                Spacer()
+                                Image(systemName: "arrow.up.right")
+                            }.ipaFont(.subheadline).padding(.vertical, 12).contentShape(Rectangle())
+                        }
+                    }
                 }.padding(.vertical, 20)
                 if IPACompatibility.requiresJIT(identifier: app.bundleIdentifier, declared: app.requiresJIT) {
                     Label("Additional Runtime Required", systemImage: "cpu").ipaFont(.headline, weight: .semibold)
                     Text("This app needs JIT and a compatible launch setup. Check its publisher’s guide before installing.").ipaFont(.footnote).foregroundStyle(.secondary).padding(.vertical, 8)
                 }
-                if !moreByPublisher.isEmpty { IPACategoryShelf(category: .init(name: "More from \(variant.store.name)", apps: moreByPublisher)).padding(.vertical, 20) }
+                if !moreByPublisher.isEmpty { IPACategoryShelf(category: .init(name: "From \(variant.store.name)", apps: moreByPublisher), library: variant.store).padding(.vertical, 20) }
                 if !recommendations.isEmpty { IPACategoryShelf(category: .init(name: "You Might Also Like", apps: recommendations)).padding(.vertical, 20) }
             }.frame(maxWidth: 720, alignment: .leading).padding(.horizontal, 20).padding(.bottom, 24).frame(maxWidth: .infinity)
 
@@ -783,10 +845,6 @@ struct IPAProductView: View {
             .navigationTitle("").navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar { productToolbar }
-            .onPreferenceChange(IPAProductHeaderHidden.self) { hidden in
-                guard compactHeader != hidden else { return }
-                withAnimation(IPAMotion.state(reduced: reduceMotion)) { compactHeader = hidden }
-            }
             .onAppear { IPAActivityHistory.shared.viewed(entry) }
             .task(id: app.bundleIdentifier) {
                 let identifier = app.bundleIdentifier
@@ -813,15 +871,11 @@ struct IPAProductView: View {
         } else {
             ToolbarItem(placement: .topBarTrailing) {
                 ShareLink(item: app.latestVersion?.downloadURL ?? variant.store.url) { Image(systemName: "square.and.arrow.up") }
-                    .accessibilityLabel("Share app")
+                    .tint(.primary).accessibilityLabel("Share app")
             }
         }
     }
 
-    private var navigationBoundary: CGFloat {
-        let windows = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows)
-        return (windows.first(where: \.isKeyWindow)?.safeAreaInsets.top ?? 0) + 44
-    }
     private var versionMenu: some View {
         Menu {
             if currentEntry.variants.count > 1 {
@@ -902,6 +956,7 @@ private struct IPAProductActions<VersionMenu: View>: View {
     @ViewBuilder let versionMenu: () -> VersionMenu
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ObservedObject private var installer = IPAInstallCoordinator.shared
+    @AppStorage("IPAInstallMode") private var mode = "container"
     var body: some View {
         if dynamicTypeSize.isAccessibilitySize {
             VStack(alignment: .leading, spacing: 8) { buttons }
@@ -910,7 +965,7 @@ private struct IPAProductActions<VersionMenu: View>: View {
     @ViewBuilder private var buttons: some View {
         IPAGetButton(variant: variant, showsStatus: true, prominent: true)
             .fixedSize(horizontal: true, vertical: false).layoutPriority(1)
-        if showsVersions, installer.job(for: variant) == nil { versionMenu() }
+        if showsVersions, installer.job(for: variant, independent: mode == "independent") == nil { versionMenu() }
     }
 }
 
@@ -929,6 +984,11 @@ private struct IPAProductHero: View {
             let pull = max(0, geometry.frame(in: .named("productScroll")).minY)
             IPARemoteImage(url: urls.first, pixels: 1200, fallbackURLs: Array(urls.dropFirst()), showsPlaceholder: false)
                 .frame(width: geometry.size.width, height: geometry.size.height + pull).clipped()
+                .overlay(alignment: .top) {
+                    Rectangle().fill(.ultraThinMaterial)
+                        .mask(LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom))
+                        .frame(height: 58).allowsHitTesting(false)
+                }
                 .overlay { LinearGradient(stops: [.init(color: .clear, location: 0.42), .init(color: IPAStyle.productCanvas.opacity(0.4), location: 0.75), .init(color: IPAStyle.productCanvas, location: 1)], startPoint: .top, endPoint: .bottom) }
                 .offset(y: -pull)
         }.aspectRatio(16 / 9, contentMode: .fit).accessibilityHidden(true)
@@ -995,16 +1055,17 @@ struct IPASettingsView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
+                    Text("Settings").ipaFont(.largeTitle, weight: .bold).accessibilityAddTraits(.isHeader)
                     IPASigningHero()
-                    IPASettingsGroup(title: "Installation Method") {
+                    IPASettingsGroup(title: nil) {
                         IPAMethodSelector()
                     }
-                    IPASettingsGroup(title: "Signing & Apps") {
+                    IPASettingsGroup(title: nil) {
                         NavigationLink { IPASigningOptionsView() } label: { IPASettingsRow("Signing Options", subtitle: "App features and compatibility", symbol: "signature", color: .indigo) }
                         IPASettingsDivider()
                         NavigationLink { IPARuntimeSettingsView() } label: { IPASettingsRow("App Behavior", subtitle: "Launch, multitasking and advanced tools", symbol: "square.grid.2x2.fill", color: .orange) }
                     }
-                    IPASettingsGroup(title: "Personalize & Manage") {
+                    IPASettingsGroup(title: nil) {
                         NavigationLink { IPAAppearanceView() } label: { IPASettingsRow("Appearance", subtitle: "Theme, accent and typography", symbol: "paintpalette.fill", color: .purple) }
                         IPASettingsDivider()
                         NavigationLink { IPAStorageSettingsView() } label: { IPASettingsRow("Storage & Files", subtitle: "App data, artwork and tweaks", symbol: "internaldrive.fill", color: .gray) }
@@ -1013,7 +1074,7 @@ struct IPASettingsView: View {
                         IPASettingsDivider()
                         NavigationLink { IPAUpdatesView() } label: { IPASettingsRow("iPAStore Updates", subtitle: "Check for the newest version", symbol: "arrow.triangle.2.circlepath", color: .blue) }
                     }
-                    IPASettingsGroup(title: "About iPAStore") {
+                    IPASettingsGroup(title: nil) {
                         Link(destination: URL(string: "https://discord.gg/EQ77PXQQgt")!) { IPASettingsRow("Community", subtitle: "Help, ideas and updates", symbol: "bubble.left.and.bubble.right.fill", color: .mint) }
                         IPASettingsDivider()
                         NavigationLink { IPAPrivacyView() } label: { IPASettingsRow("Privacy & Compatibility", symbol: "hand.raised.fill", color: .cyan) }
@@ -1027,7 +1088,8 @@ struct IPASettingsView: View {
                     Text("iPAStore · \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"))")
                         .ipaFont(.caption).foregroundStyle(.tertiary).frame(maxWidth: .infinity).padding(.bottom, 15)
                 }.padding(20).frame(maxWidth: 700).frame(maxWidth: .infinity)
-            }.background(IPAStyle.canvas).navigationTitle("Settings").navigationBarTitleDisplayMode(.large)
+            }.background(IPAStyle.canvas).navigationTitle("").navigationBarTitleDisplayMode(.inline)
+                .toolbar(.hidden, for: .navigationBar)
                 .fullScreenCover(isPresented: $showWelcome) { IPAWelcomeView { showWelcome = false }.modifier(IPATheme()) }
         }.id(navigationID)
             .onReceive(NotificationCenter.default.publisher(for: .ipaOpenSettings)) { _ in
@@ -1050,7 +1112,7 @@ struct IPAFreeSetupView: View {
                     IPASetupStep(number: "3", title: "Connect your account", detail: "Sign in securely with your Apple Account, then finish setup.")
                 }.padding(22).background(IPAStyle.card, in: RoundedRectangle(cornerRadius: 24))
                 NavigationLink { IPASigningSetupPage(state: state) } label: {
-                    IPASetupActionLabel(title: "Manage", symbol: IPASetupSymbols.manageFree)
+                    IPASetupActionLabel(title: "Manage", symbol: IPASetupSymbols.manage)
                 }.buttonStyle(.plain)
                 if let finish {
                     Button(ready ? "Start Using iPAStore" : "Finish Later", action: finish)
@@ -1338,20 +1400,23 @@ struct IPABundledNotice: View {
     }
 }
 
-private struct IPAProductHeaderHidden: PreferenceKey {
-    static var defaultValue = false
-    static func reduce(value: inout Bool, nextValue: () -> Bool) { value = nextValue() }
-}
-
 // Lazy rows alone still make SwiftUI reconcile every catalog identifier. Grow
 // the visible slice as the reader approaches its end; all results remain reachable.
 struct IPAPagedAppRows: View {
     let entries: [IPAAppEntry]
+    var cards = false
     @State private var count = 100
     var body: some View {
         ForEach(Array(entries.prefix(count))) { entry in
-            IPAAppRow(entry: entry)
-            Divider().padding(.leading, 72)
+            if cards {
+                IPAAppRow(entry: entry, descriptionLines: 2)
+                    .padding(.horizontal, 14)
+                    .background(IPAStyle.card, in: RoundedRectangle(cornerRadius: 18))
+                    .padding(.bottom, 8)
+            } else {
+                IPAAppRow(entry: entry)
+                Divider().padding(.leading, 72)
+            }
         }
         if count < entries.count {
             Color.clear.frame(height: 1).onAppear { count = min(entries.count, count + 100) }

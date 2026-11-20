@@ -8,6 +8,9 @@ import SwiftUI
     @Published var fraction: Double?
     @Published var received: Int64 = 0
     @Published var expected: Int64 = 0
+    @Published private(set) var remainingSeconds: Int?
+    private var rateSample: (time: TimeInterval, bytes: Int64)?
+    private var bytesPerSecond: Double?
     @Published var paused = false
     @Published var downloading = false
     @Published var cancelling = false
@@ -15,7 +18,53 @@ import SwiftUI
     var transfer: IPADownloadTransfer?
     var task: Task<Void, Never>?
     var terminal: Bool { failure != nil }
-    init(variant: IPAAppVariant, independent: Bool) { self.id = variant.id; self.variant = variant; self.independent = independent }
+    init(variant: IPAAppVariant, independent: Bool) {
+        id = Self.identifier(variant, independent: independent)
+        self.variant = variant
+        self.independent = independent
+    }
+
+    static func identifier(_ variant: IPAAppVariant, independent: Bool) -> String {
+        "\(independent ? "device" : "container")|\(variant.id)"
+    }
+
+    var downloadStatus: String {
+        guard downloading else { return status }
+        if paused { return "Paused" }
+        if let remainingSeconds {
+            let count = remainingSeconds < 60 ? remainingSeconds : Int(ceil(Double(remainingSeconds) / 60))
+            let unit = remainingSeconds < 60 ? "sec" : "min"
+            return "\(count) \(unit) left"
+        }
+        return "Estimating…"
+    }
+
+    func record(_ update: IPADownloadTransfer.Update, at time: TimeInterval = ProcessInfo.processInfo.systemUptime) {
+        received = update.received
+        expected = update.expected
+        fraction = expected > 0 ? min(1, max(0, Double(received) / Double(expected))) : nil
+        guard let previous = rateSample else { rateSample = (time, received); return }
+        let elapsed = time - previous.time
+        guard elapsed >= 0.4 else { return }
+        rateSample = (time, received)
+        guard received > previous.bytes, expected > received else {
+            if remainingSeconds != nil { remainingSeconds = nil }
+            return
+        }
+        let currentRate = Double(received - previous.bytes) / elapsed
+        let rate = bytesPerSecond.map { $0 * 0.75 + currentRate * 0.25 } ?? currentRate
+        bytesPerSecond = rate
+        let estimate = Double(expected - received) / rate
+        let seconds = estimate.isFinite && estimate <= 3600 ? max(1, Int(ceil(estimate))) : nil
+        if remainingSeconds != seconds { remainingSeconds = seconds }
+    }
+
+    func resetEstimate() {
+        rateSample = nil
+        bytesPerSecond = nil
+        if remainingSeconds != nil { remainingSeconds = nil }
+    }
+
 }
 
 struct IPAInstallationJobRow: View {
@@ -27,7 +76,7 @@ struct IPAInstallationJobRow: View {
             IPAArtwork(url: job.variant.app.iconURL, size: 58, identifier: job.variant.app.bundleIdentifier)
             VStack(alignment: .leading, spacing: 4) {
                 Text(job.variant.app.name).ipaFont(.headline).lineLimit(1)
-                Text(job.failure?.title ?? job.status).ipaFont(.caption).foregroundStyle(.secondary).lineLimit(1)
+                Text(job.failure?.title ?? job.downloadStatus).ipaFont(.caption).foregroundStyle(.secondary).lineLimit(1)
                 if job.downloading && job.received > 0 {
                     Text(job.expected > 0 ? "\(ByteCountFormatter.string(fromByteCount: job.received, countStyle: .file)) of \(ByteCountFormatter.string(fromByteCount: job.expected, countStyle: .file))" : ByteCountFormatter.string(fromByteCount: job.received, countStyle: .file)).ipaFont(.caption2).foregroundStyle(.secondary)
                 }
@@ -67,8 +116,8 @@ struct IPAJobProgressButton: View {
                 }.frame(width: 30, height: 30).padding(6)
             }.buttonStyle(IPAControlPressStyle()).disabled(job.cancelling)
                 .accessibilityLabel("Cancel installation of \(job.variant.app.name)")
-                .accessibilityValue((job.downloading ? job.fraction : nil).map { "\(Int($0 * 100)) percent, \(job.status)" } ?? job.status)
-            if showsStatus { Text(job.status.replacingOccurrences(of: "…", with: "")).ipaFont(.caption).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.85).contentTransition(.opacity) }
+                .accessibilityValue((job.downloading ? job.fraction : nil).map { "\(Int($0 * 100)) percent, \(job.downloadStatus)" } ?? job.downloadStatus)
+            if showsStatus { Text(job.downloadStatus).ipaFont(.caption).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.85).contentTransition(.opacity) }
         }.animation(IPAMotion.state(reduced: reduceMotion), value: job.paused)
             .animation(.easeOut(duration: 0.15), value: job.status)
     }

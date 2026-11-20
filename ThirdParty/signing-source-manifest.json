@@ -105,10 +105,14 @@
       {
         "path": "SigningBackend/Authentication/Authentication.storyboard",
         "sha256": "75071dfbdb4a7dc5eea169ea6485ef12cf70f94e5636a2a404b33a217b50d770"
+      },
+      {
+        "path": "SigningBackend/WidgetAppearance.patch",
+        "sha256": "221e4fb29e05774927fca7acdf94c2e65533b8c8ad441c4103c564970d038868"
       }
     ],
     "reconstruction": "Scripts/build_signing_backend.py",
-    "purpose": "iPAStore pairing/signing worker and account-sheet presentation theme; authentication protocols retained",
+    "purpose": "iPAStore pairing/signing worker, account-sheet presentation theme and expiration widgets; authentication protocols retained",
     "upstream_source_unchanged": false
   },
   "source_archive_note": "Reconstructed from the exact local source checkout used for the bundled backend; private IPAStore additions are included and re-applied by build_signing_backend.py."

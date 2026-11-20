@@ -38,12 +38,10 @@
 }
 
 
-+ (NSDictionary*)standaloneProfileInfo:(NSData*)profile error:(NSError**)error {
++ (NSDictionary*)standaloneProfileInfo:(NSData*)profile certificate:(NSData*)certificate password:(NSString*)password error:(NSError**)error {
     NSError *loadError = nil;
     [self loadStoreFrameworksWithError2:&loadError];
     if (loadError) { if (error) *error = loadError; return nil; }
-    NSData *certificate = self.certificateData;
-    NSString *password = LCSharedUtils.certificatePassword ?: @"";
     static NSData *lastProfile, *lastCertificate;
     static NSString *lastPassword;
     static NSDictionary *cached;
@@ -54,11 +52,11 @@
         return info;
     }
 }
-+ (NSProgress*)signStandaloneBundle:(NSURL*)bundle profile:(NSData*)profile completion:(void(^)(BOOL success, NSError *error))completion {
++ (NSProgress*)signStandaloneBundle:(NSURL*)bundle profile:(NSData*)profile certificate:(NSData*)certificate password:(NSString*)password completion:(void(^)(BOOL success, NSError *error))completion {
     NSError *error = nil;
     [self loadStoreFrameworksWithError2:&error];
     if (error) { completion(NO, error); return nil; }
-    return [NSClassFromString(@"ZSigner") signStandalone:bundle.path certificate:self.certificateData password:LCSharedUtils.certificatePassword ?: @"" profile:profile completion:completion];
+    return [NSClassFromString(@"ZSigner") signStandalone:bundle.path certificate:certificate password:password profile:profile completion:completion];
 }
 #pragma mark Multitasking
 + (NSString *)liveProcessBundleIdentifier {

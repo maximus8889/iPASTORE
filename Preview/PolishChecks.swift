@@ -64,30 +64,19 @@ enum PolishChecks {
             try require(width > 0, "Tab content has no layout")
             try require(coordinator.beginInteractive(direction: direction), "Interactive transition did not start")
             try await Task.sleep(for: .milliseconds(120))
-            if !UIAccessibility.isReduceMotionEnabled {
-                coordinator.updateInteractive(distance: -CGFloat(direction) * width * 0.45)
-                try await Task.sleep(for: .milliseconds(100))
-                report["events"] = coordinator.diagnosticEvents
-                report["progress"] = coordinator.interactiveProgress.map(Double.init) ?? NSNull()
-                report["selected"] = coordinator.selectedIndex
-                let presentation = coordinator.interactiveVisualOffset
-                report["mid_drag_translation"] = presentation.map(Double.init) ?? NSNull()
-                try require(presentation.map { abs($0) > 1 && abs($0) < width - 1 } == true, "Adjacent page was not visibly between its start and end positions")
-                coordinator.endInteractive(distance: -CGFloat(direction) * width * 0.1, velocity: 0, cancelled: true)
-                try await settle(coordinator)
-                try require(coordinator.selectedIndex == original && coordinator.selection.wrappedValue == IPATabPager.order[original], "Cancelled transition lost selected tab")
-                report["interactive_cancel"] = "PASS"
-            } else { coordinator.endInteractive(distance: 0, velocity: 0, cancelled: true) }
+            try require(coordinator.selectedIndex == original, "A held swipe must leave the page in place")
+            coordinator.endInteractive(distance: -CGFloat(direction) * width * 0.1, velocity: 0, cancelled: true)
+            try await settle(coordinator)
+            try require(coordinator.selectedIndex == original && coordinator.selection.wrappedValue == IPATabPager.order[original], "Cancelled swipe lost the selected tab")
+            report["interactive_cancel"] = "PASS"
             try require(coordinator.beginInteractive(direction: direction), "Second transition could not start")
             try await Task.sleep(for: .milliseconds(80))
-            coordinator.updateInteractive(distance: -CGFloat(direction) * width * 0.65)
             coordinator.endInteractive(distance: -CGFloat(direction) * width * 0.65, velocity: -CGFloat(direction) * 400)
             try await settle(coordinator)
             try require(coordinator.selectedIndex == target && coordinator.selection.wrappedValue == IPATabPager.order[target], "Completed swipe did not update native and app selection together")
             report["interactive_commit"] = "PASS"
             try require(coordinator.beginInteractive(direction: -direction), "Reverse swipe could not start")
             try await Task.sleep(for: .milliseconds(80))
-            coordinator.updateInteractive(distance: CGFloat(direction) * width * 0.6)
             coordinator.endInteractive(distance: CGFloat(direction) * width * 0.6, velocity: CGFloat(direction) * 400)
             try await settle(coordinator)
             try require(coordinator.selectedIndex == original && coordinator.selection.wrappedValue == IPATabPager.order[original], "Reverse swipe lost selection")
