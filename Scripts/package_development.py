@@ -156,6 +156,7 @@ manifest = {
     'output_sha256': hashlib.sha256(args.output.read_bytes()).hexdigest(),
     'bundle_identifier': info['CFBundleIdentifier'],
     'version': info['CFBundleShortVersionString'],
+    'build': info['CFBundleVersion'],
     'service_macho_type': 'MH_DYLIB',
     'status': 'Ad-hoc development package; requires real account provisioning and re-signing; device launch and renewal untested',
     'requested_entitlements': 'Engine templates preserved as ad-hoc metadata; no real team identity or profile embedded',
