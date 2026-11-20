@@ -5151,9 +5151,9 @@
 			<key>IsRemovable</key>
 			<true/>
 			<key>Label</key>
-			<string>iPAStore Installer</string>
+			<string>iPAStore</string>
 			<key>PayloadDisplayName</key>
-			<string>iPAStore Installer</string>
+			<string>iPAStore</string>
 			<key>PayloadIdentifier</key>
 			<string>app.ipastore.installer.shortcut</string>
 			<key>PayloadType</key>
@@ -5171,7 +5171,7 @@
 	<key>PayloadDescription</key>
 	<string>Adds the iPAStore installer shortcut to your Home Screen. This profile does not install or sign the native app and does not configure VPN, DNS or device management.</string>
 	<key>PayloadDisplayName</key>
-	<string>iPAStore Installer</string>
+	<string>iPAStore</string>
 	<key>PayloadIdentifier</key>
 	<string>app.ipastore.installer.profile</string>
 	<key>PayloadOrganization</key>
