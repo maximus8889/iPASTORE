@@ -98,21 +98,9 @@ struct IPARecentShelf: View {
             NavigationLink { IPAHistoryList() } label: {
                 HStack(spacing: 6) { Text("Recent").ipaFont(.title2, weight: .medium); Image(systemName: "chevron.right").ipaFont(.subheadline, weight: .semibold).foregroundStyle(.tertiary) }.foregroundStyle(.primary)
             }.buttonStyle(.plain)
-            GeometryReader { geometry in
-                ScrollView(.horizontal) {
-                    LazyHStack(alignment: .top, spacing: 20) {
-                        ForEach(Array(pages.enumerated()), id: \.offset) { _, page in
-                            VStack(spacing: 0) {
-                                ForEach(page) { record in
-                                    IPAHistoryRow(record: record).frame(minHeight: rowHeight)
-                                    if record.id != page.last?.id { Divider().padding(.leading, 72) }
-                                }
-                                Spacer(minLength: 0)
-                            }.frame(width: max(220, geometry.size.width - 34), alignment: .topLeading)
-                        }
-                    }.scrollTargetLayout()
-                }.scrollIndicators(.hidden).scrollTargetBehavior(.viewAligned).scrollClipDisabled()
-            }.frame(height: rowHeight * CGFloat(min(3, history.recent.count)) + 4)
+            IPAAppShelfPages(pages: pages, title: "Recent", rowHeight: rowHeight) { record in
+                IPAHistoryRow(record: record)
+            }
         }
     }
 }

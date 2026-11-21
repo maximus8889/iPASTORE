@@ -49,7 +49,6 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
     
     // ipa installing stuff
     @State var installprogressVisible = false
-    @State var installProgressPercentage : Float = 0.0
     @State var installObserver : NSKeyValueObservation?
     
     @State var installOptions: [AppReplaceOption]
@@ -151,22 +150,44 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Apps").ipaFont(.largeTitle, weight: .bold).accessibilityAddTraits(.isHeader)
-                    if let failed = installer.jobs.first(where: { $0.failure != nil }) {
-                        Button { installer.showFailure(failed.id) } label: {
-                            Label("Some apps need attention", systemImage: "exclamationmark.circle")
-                                .ipaFont(.subheadline).foregroundStyle(.secondary)
-                        }.buttonStyle(.plain)
-                    } else {
-                        let count = sortedApps.count + (sharedModel.isHiddenAppUnlocked ? sortedHiddenApps.count : 0) + installer.independentApps.count
-                        Text(count == 1 ? "1 app" : "\(count) apps")
-                            .ipaFont(.subheadline).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(alignment: .top) {
+                            IPATabHeading("Apps")
+                            Spacer()
+                            if sharedModel.multiLCStatus != 2 {
+                                IPAAppActions(
+                                    add: { choosingIPA = true }, addDisabled: installprogressVisible,
+                                    refresh: { showingUpdates = true },
+                                    search: { collectionSearch = true },
+                                    sort: { sortingApps = true }
+                                )
+                            }
+                        }
+                        if let failed = installer.jobs.first(where: { $0.failure != nil }) {
+                            Button { installer.showFailure(failed.id) } label: {
+                                Label("Some apps need attention", systemImage: "exclamationmark.circle")
+                                    .ipaFont(.subheadline).foregroundStyle(.secondary)
+                            }.buttonStyle(.plain)
+                        } else {
+                            let count = sortedApps.count + (sharedModel.isHiddenAppUnlocked ? sortedHiddenApps.count : 0) + installer.independentApps.count
+                            if count > 0 {
+                                Text(count == 1 ? "1 app" : "\(count) apps")
+                                    .ipaFont(.subheadline).foregroundStyle(.secondary)
+                                    .onTapGesture(count: 3) { Task { await authenticateUser() } }
+                            }
+                        }
+                        if installprogressVisible {
+                            ProgressView().accessibilityLabel("Importing app")
+                        }
+                    }
+                    if sortedApps.isEmpty && sortedHiddenApps.isEmpty && installer.independentApps.isEmpty {
+                        IPACollectionEmptyState(symbol: IPAStyle.appsSymbol, message: "Your downloaded apps appear here.") {}
                             .onTapGesture(count: 3) { Task { await authenticateUser() } }
                     }
-                }.padding(.horizontal, 20).padding(.top, 8).frame(maxWidth: .infinity, alignment: .leading)
+                }.padding(.horizontal, 20).padding(.top, 8).frame(maxWidth: 760).frame(maxWidth: .infinity)
                 NavigationLink(
-                    destination: navigateTo,
+                    destination: navigateTo.map { $0.ipaNativePage() },
                     isActive: $isNavigationActive,
                     label: {
                         EmptyView()
@@ -266,14 +287,6 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                         .padding()
                         .animation(searchContext.isTyping ? nil : .easeInOut, value: filteredHiddenApps)
                     }
-
-                    if sortedApps.isEmpty && sortedHiddenApps.isEmpty && installer.independentApps.isEmpty {
-                        VStack(spacing: 18) {
-                            Image(systemName: IPAStyle.appsSymbol).font(.system(size: 48, weight: .light)).foregroundStyle(.secondary).accessibilityHidden(true)
-                            Text("Your downloaded apps appear here.").ipaFont(.subheadline).foregroundStyle(.secondary)
-                        }.frame(maxWidth: .infinity).padding(.top, 90)
-                            .onTapGesture(count: 3) { Task { await authenticateUser() } }
-                    }
                 }.animation(searchContext.isTyping ? nil : .easeInOut, value: LCUtils.appGroupUserDefault.bool(forKey: "LCStrictHiding"))
 
                 if sharedModel.multiLCStatus == 2 {
@@ -281,7 +294,6 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                 }
 
             }
-            .navigationBarProgressBar(show:$installprogressVisible, progress: $installProgressPercentage)
             .coordinateSpace(name: "scroll")
             .onAppear {
                 if !didAppear {
@@ -293,19 +305,7 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .background(IPAStyle.canvas)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    if sharedModel.multiLCStatus != 2 {
-                        Menu {
-                            Button("Add", systemImage: "plus") { choosingIPA = true }.disabled(installprogressVisible)
-                            Button("Search", systemImage: "magnifyingglass") { collectionSearch = true }
-                            Button("Sort", systemImage: "line.3.horizontal.decrease") { sortingApps = true }
-                            Button("Refresh", systemImage: "arrow.clockwise") { showingUpdates = true }
-                        } label: { Image(systemName: "plus") }
-                            .tint(.primary).accessibilityLabel("App actions")
-                    }
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
         }
         .alert("lc.common.error".loc, isPresented: $errorShow){
             Button("lc.common.ok".loc, action: {

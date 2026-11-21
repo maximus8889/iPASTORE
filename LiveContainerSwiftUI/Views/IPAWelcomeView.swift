@@ -367,7 +367,7 @@ struct IPAHowItWorksView: View {
                 guide("Keep your signature fresh", symbol: "calendar.badge.clock") {
                     Text("A free Apple Account signature usually lasts 7 days. Tap Sign in Settings before it expires. Signing renews iPAStore; your apps and their stored data stay here.")
                     Text("Automatic renewal helps when iOS gives us background time. Keep the local connection available, and check your expiry yourself too. A reminder can give you a friendly nudge.")
-                    NavigationLink("Renewal & Reminders") { IPARenewalPreferencesView() }.fontWeight(.semibold).disabled(!IPASigningState().freeSetupComplete)
+                    NavigationLink("Renewal & Reminders") { IPARenewalPreferencesView() }.fontWeight(.semibold)
                 }
                 guide("A Home Screen app of its own", symbol: "app.badge.checkmark") {
                     Text("Choose Certificate and add both signing files. New installs can then appear as separate apps on your iPhone. They also stay listed in Apps, where Open launches the native app.")
@@ -395,19 +395,35 @@ struct IPAHowItWorksView: View {
 
 struct IPARenewalPreferencesView: View {
     @AppStorage("IPAInstallMode") private var mode = "container"
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var state = IPASigningState()
     @ObservedObject private var renewal = IPARenewalManager.shared
+    private var unlocked: Bool { state.freeSetupComplete && mode == "container" }
+
     var body: some View {
         Form {
+            if !unlocked {
+                Section {
+                    Label("Complete Free Signing", systemImage: "lock")
+                        .ipaFont(.headline)
+                    Text("Finish pairing, verify your local connection, and connect your Apple Account in Free setup to unlock these settings.")
+                        .ipaFont(.subheadline).foregroundStyle(.secondary)
+                }
+            }
             Section {
                 Toggle("Automatic Renewal", isOn: Binding(get: { renewal.automatic }, set: { renewal.setAutomatic($0) }))
-                Toggle("Expiry Reminder", isOn: Binding(get: { renewal.remindersEnabled }, set: { value in Task { await renewal.setReminders(value) } })).disabled(renewal.updatingReminders)
+                Toggle("Expiry Reminder", isOn: Binding(get: { renewal.remindersEnabled }, set: { value in Task { await renewal.setReminders(value) } }))
+                    .disabled(renewal.updatingReminders)
                 if let profile = renewal.profile { LabeledContent("Expires", value: profile.expiresAt.formatted(date: .abbreviated, time: .shortened)) }
-                if let issue = renewal.reminderIssue { Text(issue).foregroundStyle(.secondary) }
-                if let issue = renewal.schedulingIssue { Text(issue).foregroundStyle(.secondary) }
-            } footer: { Text("iOS chooses when background work runs. Complete all three Free setup steps first. Automatic renewal checks when you open iPAStore and asks iOS for background time before expiry. The local connection must be available; iOS may delay background work. Check your signature before it expires.") }
-        }.disabled(!state.freeSetupComplete || mode != "container")
-            .onAppear { state.reload() }
-            .navigationTitle("Renewal & Reminders").navigationBarTitleDisplayMode(.inline).ipaNativePage()
+                if unlocked, let issue = renewal.reminderIssue { Text(issue).foregroundStyle(.secondary) }
+                if unlocked, let issue = renewal.schedulingIssue { Text(issue).foregroundStyle(.secondary) }
+            } footer: {
+                Text("Automatic renewal checks when you open iPAStore and requests background time before expiry. Background renewal requires your local connection.")
+            }
+            .disabled(!unlocked)
+        }
+        .onAppear { state.reload() }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { state.reload() } }
+        .navigationTitle("Renewal & Reminders").navigationBarTitleDisplayMode(.inline).ipaNativePage()
     }
 }

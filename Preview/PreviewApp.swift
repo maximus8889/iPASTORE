@@ -47,17 +47,28 @@ extension NSNotification {
 }
 struct PreviewAppsView: View {
     @State private var installRequested = false
+    @State private var searching = false
+    @State private var query = ""
     var body: some View {
-        NavigationView {
-            VStack(spacing: 8) {
-                IPAEmptyState(title: "All your favorites.\nOne place.", subtitle: "Your downloaded apps will live here. This simulator build previews the interface; IPA execution requires the device engine.", symbol: "square.stack.3d.up")
-                Text("Interface Preview").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-            }.navigationTitle("Apps")
-        }.navigationViewStyle(.stack)
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(alignment: .top) {
+                        IPATabHeading("Apps")
+                        Spacer()
+                        IPAAppActions(add: { installRequested = true }, refresh: nil,
+                                      search: { searching = true }, sort: nil)
+                    }
+                    IPACollectionEmptyState(symbol: IPAStyle.appsSymbol, message: "Your downloaded apps appear here.") {}
+                }.padding(.horizontal, 20).padding(.top, 8).frame(maxWidth: 760).frame(maxWidth: .infinity)
+            }
+            .background(IPAStyle.canvas).toolbar(.hidden, for: .navigationBar)
+            .modifier(IPACollectionSearch(query: $query, presented: $searching))
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.InstallAppNotification)) { _ in installRequested = true }
         .alert("Device Build Required", isPresented: $installRequested) {
             Button("OK", role: .cancel) {}
-        } message: { Text("This preview does not download, sign, or execute IPA files. Use the device engine build to test importing.") }
+        } message: { Text("Use the iPhone build to import and run apps.") }
     }
 }
 struct LCSettingsView: View {

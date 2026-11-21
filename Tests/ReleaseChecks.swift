@@ -455,36 +455,6 @@ import Foundation
         precondition(IPAInstallIssue.launch("Library not loaded: dyld").action == .compatibleBuild, "Missing runtimes do not claim re-signing fixes them")
         precondition(IPAInstallIssue.launch("JIT unavailable").action == .compatibleBuild, "JIT guidance is distinct from certificate setup")
         precondition(IPAInstallIssue.independentSetup.action == .containerMode, "Independent-install setup offers an explicit container-mode recovery instead of a certificate-import loop")
-        precondition(IPATabPagingPolicy.direction(velocity: 0, translation: -12) == 1)
-        precondition(IPATabPagingPolicy.direction(velocity: 0, translation: 12) == -1)
-        precondition(IPATabPagingPolicy.direction(velocity: -300, translation: 0) == 1)
-        precondition(IPATabPagingPolicy.direction(velocity: 0, translation: 0) == nil)
-        precondition(IPATabPagingPolicy.acceptsPan(velocityX: 60, velocityY: 1, translationX: 10, translationY: 0), "Deliberate slow horizontal swipes must be accepted")
-        precondition(IPATabPagingPolicy.acceptsPan(velocityX: 0, velocityY: 0, translationX: -12, translationY: 1))
-        precondition(!IPATabPagingPolicy.acceptsPan(velocityX: 80, velocityY: 400, translationX: 10, translationY: 25), "Vertical scrolling must remain native")
-        precondition(!IPATabPagingPolicy.acceptsPan(velocityX: 150, velocityY: 140, translationX: 12, translationY: 10), "Ambiguous diagonals must not switch tabs")
-        precondition(!IPATabPagingPolicy.acceptsPan(velocityX: .nan, velocityY: 0, translationX: 12, translationY: 0))
-        precondition(IPATabPagingPolicy.adjacent(to: 0, direction: -1, count: 5) == nil)
-        precondition(IPATabPagingPolicy.adjacent(to: 4, direction: 1, count: 5) == nil)
-        precondition(IPATabPagingPolicy.adjacent(to: 2, direction: -1, count: 5) == 1)
-        precondition(IPATabPagingPolicy.progress(distance: -200, width: 400, direction: 1) == 0.5)
-        precondition(IPATabPagingPolicy.progress(distance: 200, width: 400, direction: -1) == 0.5)
-        precondition(IPATabPagingPolicy.progress(distance: 100, width: 400, direction: 1) == 0)
-        precondition(IPATabPagingPolicy.progress(distance: -900, width: 400, direction: 1) == 1)
-        precondition(!IPATabPagingPolicy.commits(distance: -30, velocity: 0, width: 400, direction: 1), "Short drag settles back")
-        precondition(IPATabPagingPolicy.commits(distance: -210, velocity: 0, width: 400, direction: 1), "Long drag completes")
-        precondition(IPATabPagingPolicy.commits(distance: -30, velocity: -900, width: 400, direction: 1), "Deliberate flick completes")
-        precondition(!IPATabPagingPolicy.commits(distance: -210, velocity: 900, width: 400, direction: 1), "Reversing the drag cancels")
-        precondition(IPATabPagingPolicy.progress(distance: .nan, width: 400, direction: 1) == 0)
-        precondition(!IPATabPagingPolicy.commits(distance: -200, velocity: .infinity, width: 400, direction: 1))
-        for progress in stride(from: CGFloat(0.01), through: 0.99, by: 0.01) {
-            for completed in [false, true] {
-                let remaining = completed ? 1 - progress : progress
-                let speed = IPATabPagingPolicy.completionSpeed(progress: progress, completed: completed)
-                let seconds = CGFloat(IPATabPagingPolicy.transitionDuration) * remaining / speed
-                precondition(speed.isFinite && speed >= 1 && seconds > 0 && seconds <= 0.214, "Release/cancel must never slow the remaining animation below its normal rate")
-            }
-        }
         let merged = IPAStoreDirectory.mergingSnapshot(Data(#"{"libraries":[{"id":"snapshot-ish","name":"iSH","summary":"Shell","url":"https://ish.app/altstore.json","publisher":"https://ish.app","developer":"iSH","artwork":"https://ish.app/assets/icon-full.png","marketplaceOnly":false,"webURL":"https://ish.app/altstore.json"}]}"#.utf8))
         precondition(merged.first(where: { $0.id == "ish" })?.artwork?.absoluteString == "https://ish.app/assets/icon-full.png", "Merging a known library must retain its publisher artwork")
         let base = URL(string: "https://example.org/source.json")!

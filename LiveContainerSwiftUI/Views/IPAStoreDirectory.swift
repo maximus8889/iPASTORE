@@ -262,7 +262,7 @@ struct IPASuggestionCards: View {
                 if discovery.loading { ProgressView("Finding Libraries…").frame(maxWidth: .infinity).padding(.vertical, 32) }
                 else { IPAEmptyState(title: "No Libraries Available", subtitle: query.isEmpty ? "Pull down to check again when you’re connected." : "Try a different search.", symbol: IPAStyle.storeSymbol) }
             }
-        }.padding(20).padding(.bottom, 24)
+        }.padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 24)
     }
 }
 
@@ -273,15 +273,18 @@ struct IPASuggestionsSheet: View {
         NavigationStack {
             IPASuggestionsView()
                 .navigationDestination(for: IPAStoreReference.self) { IPAStorePage(reference: $0) }
-        }.presentationDetents([.fraction(0.78), .large]).presentationDragIndicator(.visible).modifier(IPATheme())
+        }.presentationDetents([.large]).presentationDragIndicator(.visible).modifier(IPATheme())
     }
 }
 
 struct IPASuggestionsView: View {
     @EnvironmentObject private var discovery: IPADiscovery
     var body: some View {
-        ScrollView { IPASuggestionCards() }.background(IPAStyle.canvas).navigationTitle("").navigationBarTitleDisplayMode(.inline).ipaNativePage().toolbar(.hidden, for: .navigationBar)
-            .task { await discovery.load() }.refreshable { await discovery.load(force: true) }
+        ScrollView { IPASuggestionCards() }
+            .background(IPAStyle.canvas)
+            .toolbar(.hidden, for: .navigationBar)
+            .task { await discovery.load() }
+            .refreshable { await discovery.load(force: true) }
     }
 }
 struct IPAStoreAllAppsView: View {
@@ -330,8 +333,10 @@ struct IPAStorePage: View {
                 }
                 Divider()
                 HStack(alignment: .center, spacing: 14) {
-                    fact("APPS", source == nil || (entries.isEmpty && source?.apps.isEmpty == false) ? "—" : "\(entries.count)")
-                    Divider().frame(height: 34)
+                    if !entries.isEmpty {
+                        fact("APPS", "\(entries.count)")
+                        Divider().frame(height: 34)
+                    }
                     IPAWebLink(destination: reference.suggestion?.webURL ?? reference.url) {
                         VStack(alignment: .center, spacing: 4) {
                             Text("WEB").ipaFont(.caption2, weight: .semibold).foregroundStyle(.secondary)

@@ -16,12 +16,6 @@ enum PolishChecks {
         func require(_ value: Bool, _ message: String) throws {
             if !value { throw NSError(domain: "iPAStore.PreviewCheck", code: 1, userInfo: [NSLocalizedDescriptionKey: message]) }
         }
-        @MainActor func settle(_ coordinator: IPATabPager.Coordinator) async throws {
-            let deadline = Date().addingTimeInterval(4)
-            while coordinator.transitionInProgress && Date() < deadline { try await Task.sleep(for: .milliseconds(40)) }
-            try require(!coordinator.transitionInProgress, "Tab transition did not settle")
-            await Task.yield()
-        }
         func find(_ root: UIViewController) -> UITabBarController? {
             if let tabs = root as? UITabBarController { return tabs }
             for child in root.children { if let found = find(child) { return found } }
@@ -57,30 +51,16 @@ enum PolishChecks {
             }
             report["loaded_roots_before_interaction"] = coordinator.hosts.filter { $0.isViewLoaded }.count
             let original = coordinator.selectedIndex
-            cleanup = { coordinator.endInteractive(distance: 0, velocity: 0, cancelled: true); coordinator.selection.wrappedValue = IPATabPager.order[original] }
-            let direction = original == 4 ? -1 : 1
-            let target = original + direction
-            let width = tabs.view.bounds.width
-            try require(width > 0, "Tab content has no layout")
-            try require(coordinator.beginInteractive(direction: direction), "Interactive transition did not start")
-            try await Task.sleep(for: .milliseconds(120))
-            try require(coordinator.selectedIndex == original, "A held swipe must leave the page in place")
-            coordinator.endInteractive(distance: -CGFloat(direction) * width * 0.1, velocity: 0, cancelled: true)
-            try await settle(coordinator)
-            try require(coordinator.selectedIndex == original && coordinator.selection.wrappedValue == IPATabPager.order[original], "Cancelled swipe lost the selected tab")
-            report["interactive_cancel"] = "PASS"
-            try require(coordinator.beginInteractive(direction: direction), "Second transition could not start")
-            try await Task.sleep(for: .milliseconds(80))
-            coordinator.endInteractive(distance: -CGFloat(direction) * width * 0.65, velocity: -CGFloat(direction) * 400)
-            try await settle(coordinator)
-            try require(coordinator.selectedIndex == target && coordinator.selection.wrappedValue == IPATabPager.order[target], "Completed swipe did not update native and app selection together")
-            report["interactive_commit"] = "PASS"
-            try require(coordinator.beginInteractive(direction: -direction), "Reverse swipe could not start")
-            try await Task.sleep(for: .milliseconds(80))
-            coordinator.endInteractive(distance: CGFloat(direction) * width * 0.6, velocity: CGFloat(direction) * 400)
-            try await settle(coordinator)
-            try require(coordinator.selectedIndex == original && coordinator.selection.wrappedValue == IPATabPager.order[original], "Reverse swipe lost selection")
-            report["interactive_reverse"] = "PASS"
+            cleanup = {
+                coordinator.selection.wrappedValue = IPATabPager.order[original]
+                coordinator.synchronize(index: original)
+            }
+            try require(tabs.view.gestureRecognizers?.contains(where: { $0 is UIPanGestureRecognizer }) != true, "Swipe recognizer is still attached to the tab controller")
+            let target = (original + 1) % IPATabPager.order.count
+            coordinator.selection.wrappedValue = IPATabPager.order[target]
+            coordinator.synchronize(index: target)
+            try require(coordinator.selectedIndex == target, "Tab selection did not update")
+            report["tap_only_tabs"] = "PASS"
             UserDefaults.standard.set("FF9500", forKey: "IPAAccentHex")
             try await Task.sleep(for: .milliseconds(350))
             let expected = UIColor(IPAAppearance.accent("FF9500"))

@@ -167,6 +167,72 @@ struct IPAArtwork: View {
     }
 }
 
+struct IPATabHeading: View {
+    let title: LocalizedStringKey
+
+    init(_ title: LocalizedStringKey) { self.title = title }
+
+    var body: some View {
+        Text(title).ipaFont(.largeTitle, weight: .bold)
+            .accessibilityAddTraits(.isHeader)
+            .frame(minHeight: 44, alignment: .topLeading)
+    }
+}
+
+struct IPACollectionActions<Content: View>: View {
+    let title: LocalizedStringKey
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        Menu(content: content) {
+            Image(systemName: "plus").font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(.primary)
+                .frame(width: 44, height: 44)
+                .background(IPAStyle.card, in: Circle())
+                .contentShape(Circle())
+        }
+        .menuOrder(.fixed)
+        .accessibilityLabel(Text(title))
+    }
+}
+
+struct IPAAppActions: View {
+    let add: () -> Void
+    var addDisabled = false
+    let refresh: (() -> Void)?
+    let search: () -> Void
+    let sort: (() -> Void)?
+
+    var body: some View {
+        IPACollectionActions(title: "App actions") {
+            Button("Add", systemImage: "plus", action: add).disabled(addDisabled)
+            Button("Refresh", systemImage: "arrow.clockwise") { refresh?() }.disabled(refresh == nil)
+            Button("Search", systemImage: "magnifyingglass", action: search)
+            Button("Sort", systemImage: "line.3.horizontal.decrease") { sort?() }.disabled(sort == nil)
+        }
+    }
+}
+
+struct IPACollectionEmptyState<Action: View>: View {
+    let symbol: String
+    let message: LocalizedStringKey
+    @ViewBuilder let action: () -> Action
+
+    var body: some View {
+        VStack(spacing: 18) {
+            Image(systemName: symbol).font(.system(size: 48, weight: .light))
+                .frame(width: 62, height: 62)
+                .accessibilityHidden(true)
+            Text(message).ipaFont(.subheadline)
+            action()
+        }
+        .foregroundStyle(.secondary)
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity)
+        .padding(.top, 90)
+    }
+}
+
 struct IPAEmptyState: View {
     let title: String
     let subtitle: String
@@ -290,29 +356,49 @@ struct IPACategoryShelf: View {
             if category.apps.isEmpty {
                 Text("No apps in this category yet.").ipaFont(.subheadline).foregroundStyle(.secondary).padding(.top, 8)
             } else {
-                GeometryReader { geometry in
-                    ScrollView(.horizontal) {
-                        // Fixed page geometry keeps vertical layout stable while
-                        // offscreen pages defer their icon and button work.
-                        LazyHStack(alignment: .top, spacing: 14) {
-                            ForEach(Array(pages.enumerated()), id: \.offset) { index, page in
-                                VStack(spacing: 0) {
-                                    ForEach(page) { entry in
-                                        IPAAppRow(entry: entry).frame(minHeight: rowHeight)
-                                        if entry.id != page.last?.id { Divider().padding(.leading, 72) }
-                                    }
-                                    Spacer(minLength: 0)
-                                }.frame(width: max(1, geometry.size.width - (pages.count > 1 ? 20 : 0)), height: rowHeight * CGFloat(min(3, category.apps.count)) + 4, alignment: .topLeading)
-                                    .accessibilityElement(children: .contain)
-                                    .accessibilityLabel("\(category.name), page \(index + 1)")
-                            }
-
-                        }.scrollTargetLayout()
-                    }.contentMargins(.trailing, pages.count > 1 ? 20 : 0, for: .scrollContent)
-                        .scrollIndicators(.hidden).scrollTargetBehavior(.viewAligned(limitBehavior: .always))
-                }.frame(height: rowHeight * CGFloat(min(3, category.apps.count)) + 4)
+                IPAAppShelfPages(pages: pages, title: category.name, rowHeight: rowHeight) { entry in
+                    IPAAppRow(entry: entry)
+                }
             }
         }
+    }
+}
+
+struct IPAAppShelfPages<Item: Identifiable, Row: View>: View {
+    let pages: [[Item]]
+    let title: String
+    let rowHeight: CGFloat
+    @ViewBuilder let row: (Item) -> Row
+
+    private let gap: CGFloat = 16
+    private let nextPagePreview: CGFloat = 6
+    private var height: CGFloat { rowHeight * CGFloat(pages.first?.count ?? 0) + 4 }
+
+    var body: some View {
+        GeometryReader { geometry in
+            ScrollView(.horizontal) {
+                LazyHStack(alignment: .top, spacing: gap) {
+                    ForEach(Array(pages.enumerated()), id: \.offset) { index, page in
+                        let width = index == pages.count - 1 ? geometry.size.width
+                            : max(1, geometry.size.width - gap - nextPagePreview)
+                        VStack(spacing: 0) {
+                            ForEach(page) { item in
+                                row(item).frame(minHeight: rowHeight)
+                                if item.id != page.last?.id { Divider().padding(.leading, 72) }
+                            }
+                        }
+                        .frame(width: width, height: height, alignment: .topLeading)
+                        .accessibilityElement(children: .contain)
+                        .accessibilityLabel("\(title), page \(index + 1)")
+                    }
+                }
+                .scrollTargetLayout()
+            }
+            .scrollIndicators(.hidden)
+            .scrollTargetBehavior(.viewAligned(limitBehavior: .always))
+            .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+        }
+        .frame(height: height)
     }
 }
 
@@ -367,7 +453,7 @@ struct IPATodayView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 30) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Today").ipaFont(.largeTitle, weight: .bold)
+                            IPATabHeading("Today")
                             Text(context.date, format: .dateTime.weekday(.wide).month(.wide).day()).ipaFont(.subheadline, weight: .medium).foregroundStyle(.secondary)
                         }.padding(.top, 8)
                         if let suggested = discovery.featured {
@@ -496,27 +582,40 @@ struct IPAStoresView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Stores").ipaFont(.largeTitle, weight: .bold).accessibilityAddTraits(.isHeader)
-                        if failedSources.isEmpty {
-                            Text(catalog.sources.count == 1 ? "1 store" : "\(catalog.sources.count) stores")
-                                .ipaFont(.subheadline).foregroundStyle(.secondary)
-                        } else {
+                        HStack(alignment: .top) {
+                            IPATabHeading("Stores")
+                            Spacer()
+                            IPACollectionActions(title: "Store actions") {
+                                Button("Add", systemImage: "plus") { adding = true }
+                                Button("Suggestions", systemImage: "sparkles") { suggestions = true }
+                                Button("Refresh", systemImage: "arrow.clockwise") { Task { await catalog.refreshAllSources() } }
+                                Button("Search", systemImage: "magnifyingglass") { searching = true }
+                                Button("Sort", systemImage: "line.3.horizontal.decrease") { sorting = true }
+                            }
+                        }
+                        if !failedSources.isEmpty {
                             Button { refreshDetails = true } label: {
                                 Label(failedSources.count == 1 ? "1 store needs attention" : "\(failedSources.count) stores need attention",
                                       systemImage: "exclamationmark.circle").ipaFont(.subheadline)
                             }.buttonStyle(.plain).foregroundStyle(.secondary)
+                        } else if !catalog.sources.isEmpty {
+                            Text(catalog.sources.count == 1 ? "1 store" : "\(catalog.sources.count) stores")
+                                .ipaFont(.subheadline).foregroundStyle(.secondary)
                         }
-                    }.frame(maxWidth: .infinity, alignment: .leading)
+                    }
                     if catalog.sources.isEmpty {
-                        VStack(spacing: 14) {
-                            Image(systemName: IPAStyle.storeSymbol).font(.system(size: 48, weight: .light)).foregroundStyle(.secondary).accessibilityHidden(true)
-                            Text("There are currently no stores.").ipaFont(.headline, weight: .semibold)
-                            Text("Add some in Suggestions.").ipaFont(.subheadline).foregroundStyle(.secondary)
-                        }.multilineTextAlignment(.center).frame(maxWidth: .infinity).padding(.top, 105)
+                        IPACollectionEmptyState(symbol: IPAStyle.storeSymbol, message: "Your added stores appear here.") {
+                            Button("Add some in Suggestions") { suggestions = true }
+                                .ipaFont(.subheadline, weight: .semibold)
+                                .padding(.horizontal, 16)
+                                .frame(minHeight: 44)
+                                .background(.secondary.opacity(0.12), in: Capsule())
+                                .buttonStyle(.plain)
+                        }
                     }
                     ForEach(orderedSources) { item in
                         VStack(alignment: .leading, spacing: 8) {
-                            IPALibraryCard(reference: IPAStoreReference(item), source: item.source, subtitle: item.source.map { "\($0.apps.count) \($0.apps.count == 1 ? "app" : "apps")" } ?? (item.error == nil ? "App library" : "Unavailable · see update details"))
+                            IPALibraryCard(reference: IPAStoreReference(item), source: item.source, subtitle: item.source.flatMap { $0.apps.isEmpty ? nil : "\($0.apps.count) \($0.apps.count == 1 ? "app" : "apps")" } ?? (item.error == nil ? "App library" : "Unavailable · see update details"))
 
                         }.contextMenu {
                             Button("Refresh", systemImage: "arrow.clockwise") { Task { await catalog.refreshSource(item) } }
@@ -524,20 +623,11 @@ struct IPAStoresView: View {
                             Button("Remove Library", systemImage: "trash", role: .destructive) { catalog.removeSource(item) }
                         }
                     }
-                }.padding(20).padding(.bottom, 20).frame(maxWidth: 760).frame(maxWidth: .infinity)
-            }.background(IPAStyle.canvas).navigationTitle("").navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Menu {
-                            Button("Add", systemImage: "plus") { adding = true }
-                            Button("Suggestions", systemImage: "sparkles") { suggestions = true }
-                            Button("Refresh", systemImage: "arrow.clockwise") { Task { await catalog.refreshAllSources() } }
-                            Button("Search", systemImage: "magnifyingglass") { searching = true }
-                            Button("Sort", systemImage: "line.3.horizontal.decrease") { sorting = true }
-                        } label: { Image(systemName: "plus") }
-                            .tint(.primary).accessibilityLabel("Store actions")
-                    }
                 }
+                .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 40)
+                .frame(maxWidth: 760).frame(maxWidth: .infinity)
+            }.background(IPAStyle.canvas).navigationTitle("").navigationBarTitleDisplayMode(.inline)
+                .toolbar(.hidden, for: .navigationBar)
                 .sheet(isPresented: $sorting, onDismiss: {
                     if arranging { arranging = false; showingArrangement = true }
                 }) {
@@ -658,9 +748,9 @@ struct IPASearchView: View {
             ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
-                    Text("Search").ipaFont(.largeTitle, weight: .bold).accessibilityAddTraits(.isHeader)
+                    IPATabHeading("Search")
                         .frame(maxWidth: 720, alignment: .leading).padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 14)
-                        .frame(maxWidth: .infinity).id("ipa-search-top")
+                        .frame(maxWidth: 760).frame(maxWidth: .infinity).id("ipa-search-top")
                     Section {
                     LazyVStack(alignment: .leading, spacing: 24) {
                     if trimmed.isEmpty {
@@ -729,6 +819,9 @@ struct IPASearchView: View {
 struct IPAProductView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @ScaledMetric(relativeTo: .subheadline) private var factWidth: CGFloat = 124
+    @ScaledMetric(relativeTo: .subheadline) private var factHeight: CGFloat = 90
     let entry: IPAAppEntry
     @State private var selectedVariantID: String?
     @State private var selectedVersionID: String?
@@ -839,11 +932,15 @@ struct IPAProductView: View {
 
         }.modifier(IPAProductScrollEdges())
             .background(IPAStyle.productCanvas)
+            .overlay(alignment: .top) {
+                if !compactHeader { statusBarBackdrop }
+            }
             .ipaNativePage()
             .coordinateSpace(name: "productScroll")
             .ignoresSafeArea(.container, edges: .top)
             .navigationTitle("").navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbarBackground(.regularMaterial, for: .navigationBar)
+            .toolbarBackground(compactHeader ? .visible : .hidden, for: .navigationBar)
             .toolbar { productToolbar }
             .onAppear { IPAActivityHistory.shared.viewed(entry) }
             .task(id: app.bundleIdentifier) {
@@ -852,6 +949,24 @@ struct IPAProductView: View {
                 if !Task.isCancelled, app.bundleIdentifier == identifier { listing = value }
             }
     }
+    private var statusBarBackdrop: some View {
+        let fade = LinearGradient(stops: [
+            .init(color: .black, location: 0),
+            .init(color: .black, location: 0.55),
+            .init(color: .clear, location: 1)
+        ], startPoint: .top, endPoint: .bottom)
+
+        return Rectangle()
+            .fill(.regularMaterial)
+            .overlay {
+                IPAStyle.productCanvas.opacity(reduceTransparency ? 1 : 0.72)
+            }
+            .mask(fade)
+            .frame(height: 104)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+    }
+
     private var productActions: some View {
         IPAProductActions(variant: installVariant, showsVersions: currentEntry.variants.count > 1 || variant.app.versions.count > 1) { versionMenu }
     }
@@ -909,37 +1024,55 @@ struct IPAProductView: View {
             .accessibilityLabel("Choose version and edition")
             .accessibilityValue("\(app.latestVersion?.version ?? variant.edition), \(variant.store.name)")
     }
-    private struct Fact { let title: String; let value: String; var symbol: String? = nil; var caption: String? = nil; var small = false }
+    private struct Fact: Identifiable {
+        let title: String
+        let value: String
+        var symbol: String?
+        var caption: String?
+        var id: String { title }
+    }
     private var facts: [Fact] {
         var values: [Fact] = []
         if let rating = listing?.rating, let count = listing?.ratingCount, count > 0 { values.append(.init(title: "\(count.formatted(.number.notation(.compactName))) RATINGS", value: String(format: "%.1f", rating), symbol: "star.fill")) }
         if let age = IPACatalogPresentation.displayValue(listing?.ageRating) { values.append(.init(title: "AGE RATING", value: age, caption: "Years Old")) }
-        if let developer = IPACatalogPresentation.displayValue(app.developerName) { values.append(.init(title: "DEVELOPER", value: developer, symbol: "person.crop.square", small: true)) }
+        if let developer = IPACatalogPresentation.displayValue(app.developerName) { values.append(.init(title: "DEVELOPER", value: developer, symbol: "person.crop.square")) }
         if let version = IPACatalogPresentation.displayValue(app.latestVersion?.version) { values.append(.init(title: "VERSION", value: version, symbol: "app.badge")) }
         if let bytes = app.latestVersion?.size, bytes > 0 { values.append(.init(title: "SIZE", value: ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file), symbol: "arrow.down.circle")) }
         if let minimum = IPACatalogPresentation.displayValue(app.latestVersion?.minOSVersion) { values.append(.init(title: "COMPATIBILITY", value: "\(minimum)+", symbol: "iphone")) }
         return values
     }
     private var informationStrip: some View {
-        GeometryReader { geometry in
-            let columns = facts
-            let width = max(88, geometry.size.width / CGFloat(max(1, min(4, columns.count))))
-            ScrollView(.horizontal) {
-                HStack(alignment: .center, spacing: 0) {
-                    ForEach(Array(columns.enumerated()), id: \.offset) { index, fact in
-                        VStack(spacing: 5) {
-                            Text(fact.title).ipaFont(.caption2, weight: .medium).lineLimit(1)
-                            if fact.small, let symbol = fact.symbol { Image(systemName: symbol).ipaFont(.title2) }
-                            Text(fact.value).ipaFont(fact.small ? .caption : .title2, weight: .semibold).lineLimit(fact.small ? 2 : 1).minimumScaleFactor(0.8)
-                            if !fact.small, let symbol = fact.symbol { Image(systemName: symbol).ipaFont(.caption) }
-                            if let caption = fact.caption { Text(caption).ipaFont(.caption).lineLimit(1) }
-                        }.multilineTextAlignment(.center).frame(width: width, height: 80).foregroundStyle(.secondary)
-                            .overlay(alignment: .trailing) { if index < columns.count - 1 { Rectangle().fill(Color(uiColor: .separator)).frame(width: 0.5, height: 46) } }
+        ScrollView(.horizontal) {
+            HStack(alignment: .top, spacing: 10) {
+                ForEach(facts) { fact in
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(fact.title).ipaFont(.caption2, weight: .semibold)
+                            .foregroundStyle(.secondary).lineLimit(2)
+                        HStack(alignment: .top, spacing: 6) {
+                            if let symbol = fact.symbol {
+                                Image(systemName: symbol).ipaFont(.caption)
+                                    .foregroundStyle(.tint).accessibilityHidden(true)
+                            }
+                            Text(fact.value).ipaFont(.subheadline, weight: .semibold)
+                                .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                        }
+                        if let caption = fact.caption {
+                            Text(caption).ipaFont(.caption).foregroundStyle(.secondary)
+                        }
                     }
-                }.frame(minWidth: geometry.size.width, alignment: .center)
-            }.scrollIndicators(.hidden)
-        }.frame(height: 80)
+                    .padding(12)
+                    .frame(width: factWidth, alignment: .leading)
+                    .frame(minHeight: factHeight, alignment: .topLeading)
+                    .background(IPAStyle.card, in: RoundedRectangle(cornerRadius: 14))
+                    .accessibilityElement(children: .combine)
+                }
+            }
+            .padding(.horizontal, IPAStyle.inset)
+        }
+        .scrollIndicators(.hidden)
+        .padding(.horizontal, -IPAStyle.inset)
     }
+
     @ViewBuilder private func information(_ label: String, _ value: String, symbol: String? = nil) -> some View {
         if let value = IPACatalogPresentation.displayValue(value) { VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 24) { Text(label).foregroundStyle(.secondary); Spacer(minLength: 8); if let symbol { Label(value, systemImage: symbol).lineLimit(1) } else { Text(value).multilineTextAlignment(.trailing).lineLimit(3) } }.ipaFont(.subheadline).padding(.vertical, 12)
@@ -984,11 +1117,6 @@ private struct IPAProductHero: View {
             let pull = max(0, geometry.frame(in: .named("productScroll")).minY)
             IPARemoteImage(url: urls.first, pixels: 1200, fallbackURLs: Array(urls.dropFirst()), showsPlaceholder: false)
                 .frame(width: geometry.size.width, height: geometry.size.height + pull).clipped()
-                .overlay(alignment: .top) {
-                    Rectangle().fill(.ultraThinMaterial)
-                        .mask(LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom))
-                        .frame(height: 58).allowsHitTesting(false)
-                }
                 .overlay { LinearGradient(stops: [.init(color: .clear, location: 0.42), .init(color: IPAStyle.productCanvas.opacity(0.4), location: 0.75), .init(color: IPAStyle.productCanvas, location: 1)], startPoint: .top, endPoint: .bottom) }
                 .offset(y: -pull)
         }.aspectRatio(16 / 9, contentMode: .fit).accessibilityHidden(true)
@@ -1055,7 +1183,7 @@ struct IPASettingsView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
-                    Text("Settings").ipaFont(.largeTitle, weight: .bold).accessibilityAddTraits(.isHeader)
+                    IPATabHeading("Settings")
                     IPASigningHero()
                     IPASettingsGroup(title: nil) {
                         IPAMethodSelector()
@@ -1087,7 +1215,8 @@ struct IPASettingsView: View {
                     }.buttonStyle(.plain).background(IPAStyle.card, in: RoundedRectangle(cornerRadius: 23))
                     Text("iPAStore · \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0") (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"))")
                         .ipaFont(.caption).foregroundStyle(.tertiary).frame(maxWidth: .infinity).padding(.bottom, 15)
-                }.padding(20).frame(maxWidth: 700).frame(maxWidth: .infinity)
+                }.padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 20)
+                    .frame(maxWidth: 760).frame(maxWidth: .infinity)
             }.background(IPAStyle.canvas).navigationTitle("").navigationBarTitleDisplayMode(.inline)
                 .toolbar(.hidden, for: .navigationBar)
                 .fullScreenCover(isPresented: $showWelcome) { IPAWelcomeView { showWelcome = false }.modifier(IPATheme()) }
@@ -1118,7 +1247,9 @@ struct IPAFreeSetupView: View {
                     Button(ready ? "Start Using iPAStore" : "Finish Later", action: finish)
                         .ipaFont(.subheadline, weight: .semibold).frame(maxWidth: .infinity, minHeight: 46).buttonStyle(.plain).foregroundStyle(.tint)
                 }
-                NavigationLink("Renewal & Reminders") { IPARenewalPreferencesView() }.ipaFont(.subheadline, weight: .medium).disabled(!ready)
+                NavigationLink { IPARenewalPreferencesView() } label: {
+                    IPASetupActionLabel(title: "Renewal & Reminders", symbol: "clock.arrow.circlepath")
+                }.buttonStyle(.plain)
                 Text("iOS 27 or later supports pairing on this iPhone. You’ll approve system prompts and enable a local connection. iOS controls background refresh timing.").ipaFont(.footnote).foregroundStyle(.secondary)
             }.padding(24).frame(maxWidth: 620).frame(maxWidth: .infinity)
         }.background(IPAStyle.canvas).navigationTitle("").navigationBarTitleDisplayMode(.inline).onAppear { state.importInteractiveReadiness(); state.reload() }
