@@ -55,7 +55,7 @@ struct IPAHistoryList: View {
         }.background(IPAStyle.canvas).navigationTitle(downloaded ? "Downloaded Apps" : "Recent Apps").navigationBarTitleDisplayMode(.inline).ipaNativePage()
             .modifier(IPACollectionSearch(query: $query, presented: $searching))
             .toolbar { ToolbarItem(placement: .topBarTrailing) {
-                Menu { Button("Search", systemImage: "magnifyingglass") { searching = true }; Divider(); Picker("Sort", selection: $order) { Text("Most Recent").tag("recent"); Text("Oldest First").tag("oldest"); Text("Name").tag("name") } } label: { Image(systemName: "arrow.up.arrow.down") }.accessibilityLabel("Sort history")
+                Menu { Button("Search", systemImage: "magnifyingglass") { searching = true }; Divider(); Picker("Sort", selection: $order) { Text("Most Recent").tag("recent"); Text("Oldest First").tag("oldest"); Text("Name").tag("name") }.pickerStyle(.inline).labelsHidden() } label: { Image(systemName: "arrow.up.arrow.down") }.accessibilityLabel("Sort history")
             } }
     }
 }
@@ -132,9 +132,81 @@ private struct IPACollectionSearchField: View {
     }
 }
 
+struct IPACollectionSortSheet<Option: Hashable>: View {
+    @Binding var selection: Option
+    let options: [Option]
+    let title: (Option) -> String
+
+    var body: some View {
+        Form {
+            Picker("Sort", selection: $selection) {
+                ForEach(options, id: \.self) { Text(title($0)).tag($0) }
+            }.pickerStyle(.inline).labelsHidden()
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+    }
+}
+
+struct IPAArrangeCollectionButton: View {
+    let title: LocalizedStringKey
+    let action: () -> Void
+
+    init(_ title: LocalizedStringKey, action: @escaping () -> Void) {
+        self.title = title
+        self.action = action
+    }
+
+    var body: some View {
+        Button(action: action) {
+            Label(title, systemImage: "line.3.horizontal")
+                .ipaFont(.subheadline, weight: .semibold)
+                .frame(minHeight: 44, alignment: .leading)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.tint)
+    }
+}
+
+enum IPAStoreSort: String, CaseIterable {
+    case defaultOrder = "default"
+    case alphabetical
+    case reverseAlphabetical
+    case dateAdded
+    case custom
+
+    var title: String {
+        switch self {
+        case .defaultOrder: "lc.common.default".loc
+        case .alphabetical: "lc.appList.sort.alphabetical".loc
+        case .reverseAlphabetical: "lc.appList.sort.reverseAlphabetical".loc
+        case .dateAdded: "Date Added"
+        case .custom: "lc.appList.sort.custom".loc
+        }
+    }
+
+    func ordered(_ sources: [AltStoreSourcesViewModel.SourceItem], savedOrder: String) -> [AltStoreSourcesViewModel.SourceItem] {
+        switch self {
+        case .defaultOrder: return sources
+        case .alphabetical, .reverseAlphabetical:
+            let direction: ComparisonResult = self == .alphabetical ? .orderedAscending : .orderedDescending
+            return sources.sorted {
+                IPAStoreDirectory.title(for: $0).localizedStandardCompare(IPAStoreDirectory.title(for: $1)) == direction
+            }
+        case .dateAdded:
+            return Array(sources.reversed())
+        case .custom:
+            let ids = (try? JSONDecoder().decode([String].self, from: Data(savedOrder.utf8))) ?? []
+            let positions = Dictionary(ids.enumerated().map { ($0.element, $0.offset) }, uniquingKeysWith: min)
+            return sources.map { (positions[IPAStoreDirectory.canonical($0.url)] ?? Int.max, $0) }
+                .sorted { $0.0 < $1.0 }.map { $0.1 }
+        }
+    }
+}
+
 struct IPAArrangeLibraries: View {
     let items: [AltStoreSourcesViewModel.SourceItem]
-    @Binding var storedOrder: String
+    let onReorder: ([String]) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var ordered: [AltStoreSourcesViewModel.SourceItem] = []
     var body: some View {
@@ -143,8 +215,10 @@ struct IPAArrangeLibraries: View {
                 ForEach(ordered) { item in
                     HStack(spacing: 12) { IPAStoreArtwork(source: item.source, reference: IPAStoreReference(item), size: 40); Text(IPAStoreDirectory.title(for: item)).lineLimit(1) }
                 }.onMove { from, to in
+                    let previous = ordered.map(\.id)
                     ordered.move(fromOffsets: from, toOffset: to)
-                    if let data = try? JSONEncoder().encode(ordered.map { IPAStoreDirectory.canonical($0.url) }), let text = String(data: data, encoding: .utf8) { storedOrder = text }
+                    guard ordered.map(\.id) != previous else { return }
+                    onReorder(ordered.map { IPAStoreDirectory.canonical($0.url) })
                 }
             }
                 .listStyle(.plain).scrollContentBackground(.hidden).background(IPAStyle.canvas)

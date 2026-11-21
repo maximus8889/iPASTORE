@@ -26,7 +26,7 @@ struct LCCustomSortView: View {
             .navigationTitle("Arrange Apps").navigationBarTitleDisplayMode(.inline).ipaNativePage()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done", action: saveChanges)
+                    Button("Done") { dismiss() }
                 }
             }
             .environment(\.editMode, .constant(.active))
@@ -54,20 +54,22 @@ struct LCCustomSortView: View {
             .padding(.vertical, 4)
         }
         .onMove { source, destination in
+            let previous = apps.wrappedValue
             apps.wrappedValue.move(fromOffsets: source, toOffset: destination)
+            if apps.wrappedValue != previous { saveChanges() }
         }
     }
 
     private func initializeLocalState() {
         let manager = LCAppSortManager.shared
-        localApps = manager.getSortedApps(sharedModel.apps, sortType: .custom, customSortOrder: manager.customSortOrder)
-        localHiddenApps = manager.getSortedApps(sharedModel.hiddenApps, sortType: .custom, customSortOrder: manager.customSortOrder)
+        localApps = manager.getSortedApps(sharedModel.apps, sortType: manager.appSortType, customSortOrder: manager.customSortOrder)
+        let hiddenSort = sharedModel.isHiddenAppUnlocked ? manager.appSortType : .custom
+        localHiddenApps = manager.getSortedApps(sharedModel.hiddenApps, sortType: hiddenSort, customSortOrder: manager.customSortOrder)
     }
 
     private func saveChanges() {
         let manager = LCAppSortManager.shared
         manager.customSortOrder = (localApps + localHiddenApps).compactMap { manager.getUniqueIdentifier(for: $0) }
         manager.appSortType = .custom
-        dismiss()
     }
 }

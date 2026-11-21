@@ -49,7 +49,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>152</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>GCSupportedGameControllers</key>
 	<array>
 		<dict>

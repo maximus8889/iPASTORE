@@ -5,7 +5,6 @@ import UniformTypeIdentifiers
 
 enum IPADistribution {
     static let repository = "maximus8889/iPAStore"
-    static let installer = URL(string: "https://maximus8889.github.io/iPAStore/install.html")!
     static let latestReleaseEndpoint = URL(string: "https://api.github.com/repos/\(repository)/releases/latest")!
 
     struct Release: Decodable {
@@ -152,11 +151,7 @@ struct IPAUpdatesView: View {
                 if let release, let build = release.build {
                     releaseCard(release, build: build)
                 }
-                Link(destination: IPADistribution.installer) {
-                    Label("Open Download & Install Page", systemImage: "safari")
-                        .ipaFont(.subheadline, weight: .semibold)
-                }
-                .padding(.vertical, 10)
+
             }
             .padding(.horizontal, 20).padding(.top, 8).padding(.bottom, 24)
             .frame(maxWidth: 560).frame(maxWidth: .infinity)
@@ -286,11 +281,13 @@ struct IPAUpdatesView: View {
                     return
                 }
                 try Task.checkCancellation()
+                if let installedBuild, let build = latest.build, build < installedBuild {
+                    checkMessage = "No newer build has been published."
+                    return
+                }
                 release = latest
-                if let installedBuild, let build = latest.build {
-                    if build <= installedBuild {
-                        checkMessage = "You’re up to date."
-                    } else if latest.package == nil {
+                if let installedBuild, let build = latest.build, build > installedBuild {
+                    if latest.package == nil {
                         checkMessage = "The latest build is listed. Its download isn’t available yet."
                     } else {
                         confirmingDownload = true

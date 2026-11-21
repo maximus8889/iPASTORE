@@ -162,17 +162,17 @@ struct IPAAppearanceView: View {
             Section("Preview") {
                 HStack(spacing: 14) {
                     IPABrandGlyph(size: 44)
-                    VStack(alignment: .leading, spacing: 4) { Text("Make it yours.").ipaFont(.headline, weight: .semibold); Text("Your apps, your style.").ipaFont(.subheadline).foregroundStyle(.secondary) }
+                    Text("iPAStore").ipaFont(.headline, weight: .semibold)
                     Spacer(minLength: 4)
                     Text("Open").ipaFont(.subheadline, weight: .bold).foregroundStyle(.tint).padding(.horizontal, 14).padding(.vertical, 8).background(Color(uiColor: .tertiarySystemFill), in: Capsule())
                 }.padding(.vertical, 8)
             }
             Section("Display") {
                 Picker("Appearance", selection: $mode) { Text("System").tag("system"); Text("Light").tag("light"); Text("Dark").tag("dark") }
-                ColorPicker("Accent Color", selection: Binding(get: { IPAAppearance.accent(hex) }, set: { hex = IPAAppearance.hex($0) }), supportsOpacity: false)
+                ColorPicker("Accent Color", selection: Binding(get: { IPAAppearance.accent(hex) }, set: { selectAccent(IPAAppearance.hex($0)) }), supportsOpacity: false)
                 HStack {
                     ForEach(["systemBlue", "AF52DE", "FFCC00", "FF2D55", "34C759", "FF9500"], id: \.self) { value in
-                        Button { hex = value } label: {
+                        Button { selectAccent(value) } label: {
                             Circle().fill(IPAAppearance.accent(value)).frame(width: 32, height: 32)
                                 .overlay { if (hex == value || (value == "systemBlue" && hex.uppercased() == "007AFF")) { Image(systemName: "checkmark").foregroundStyle(value == "FFCC00" ? .black : .white).font(.caption.bold()).transition(IPAMotion.reveal(reduced: reduceMotion)) } }.frame(maxWidth: .infinity, minHeight: 44)
                                 .animation(IPAMotion.state(reduced: reduceMotion), value: hex)
@@ -187,8 +187,10 @@ struct IPAAppearanceView: View {
                     }
                 }.pickerStyle(.navigationLink)
                 Toggle("Bold Text", isOn: $bold)
-            } header: { Text("Typography") } footer: { Text("Monocraft is an openly licensed pixel font. System controls, keyboards and installed apps keep their own typography. Text continues to follow your iPhone’s text-size setting.") }
-            Section { NavigationLink { IPAIconPicker() } label: { Label("App Icon", systemImage: "app") } } header: { Text("Home Screen") } footer: { Text("Choose an included icon. Your iPhone also controls Home Screen dark and tinted appearances.") }
+            } header: { Text("Typography") }
+            Section("Home Screen") {
+                NavigationLink { IPAIconPicker() } label: { Label("App Icon", systemImage: "app") }
+            }
             Section("Apps") {
                 Picker("Under App Names", selection: $subtitle) {
                     ForEach(IPAAppSubtitle.allCases) { Text($0.title).tag($0) }
@@ -206,6 +208,12 @@ struct IPAAppearanceView: View {
         }.navigationTitle("Appearance").navigationBarTitleDisplayMode(.inline).ipaNativePage()
             .modifier(IPATheme())
             .preferredColorScheme(mode == "light" ? .light : mode == "dark" ? .dark : nil)
+    }
+
+    private func selectAccent(_ value: String) {
+        guard hex != value else { return }
+        hex = value
+        IPAFeedback.success()
     }
 
     private func feedbackChoices<Option: IPAFeedbackOption, Options: RandomAccessCollection>(
@@ -232,6 +240,7 @@ private struct IPAIconPicker: View {
     @State private var current = UIApplication.shared.alternateIconName
     @State private var changing = false
     @State private var error: String?
+    @State private var iconChanged = false
     private let choices: [(String, String?, String)] = [("Automatic", nil, "IconPreviewDefault"), ("Light", "AppIconLight", "IconPreviewLight"), ("Midnight", "AppIconMidnight", "IconPreviewMidnight"),
         ("Ocean", "AppIconOcean", "IconPreviewOcean"), ("Jade", "AppIconJade", "IconPreviewJade"),
         ("Iris", "AppIconIris", "IconPreviewIris"), ("Ember", "AppIconEmber", "IconPreviewEmber"),
@@ -241,9 +250,19 @@ private struct IPAIconPicker: View {
         List {
             ForEach(choices, id: \.0) { name, icon, asset in
                 Button {
+                    guard current != icon else { return }
+                    IPAFeedback.confirmationHaptic()
                     changing = true
-                    UIApplication.shared.setAlternateIconName(icon) { failure in
-                        DispatchQueue.main.async { changing = false; current = UIApplication.shared.alternateIconName; if failure != nil { error = "The icon couldn’t be changed. Try again while iPAStore is open." } }
+                    iconChanged = false
+                    Task { @MainActor in
+                        defer { changing = false }
+                        do {
+                            try await UIApplication.shared.setAlternateIconName(icon)
+                            current = UIApplication.shared.alternateIconName
+                            iconChanged = true
+                        } catch {
+                            self.error = "The icon couldn’t be changed. Try again while iPAStore is open."
+                        }
                     }
                 } label: {
                     HStack(spacing: 16) {
@@ -254,8 +273,16 @@ private struct IPAIconPicker: View {
                     }.padding(.vertical, 6).animation(IPAMotion.state(reduced: reduceMotion), value: current)
                 }.buttonStyle(IPAControlPressStyle(scale: 0.985)).disabled(changing || !UIApplication.shared.supportsAlternateIcons)
             }
-            if !UIApplication.shared.supportsAlternateIcons { Text("Alternate icons aren’t available in this build or on this device.").font(.footnote).foregroundStyle(.secondary) }
         }.navigationTitle("App Icon").navigationBarTitleDisplayMode(.inline).ipaNativePage()
+            .safeAreaInset(edge: .bottom) {
+                if iconChanged {
+                    Label("Icon successfully changed!", systemImage: "checkmark.circle.fill")
+                        .ipaFont(.subheadline, weight: .semibold)
+                        .padding(.horizontal, 18).padding(.vertical, 12)
+                        .background(.regularMaterial, in: Capsule())
+                        .padding(.bottom, 8)
+                }
+            }
             .alert("App Icon", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) { Button("OK") { error = nil } } message: { Text(error ?? "") }
     }
 }

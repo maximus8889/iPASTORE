@@ -449,6 +449,7 @@ struct IPACategoryView: View {
                 Menu {
                     Button("Search", systemImage: "magnifyingglass") { searching = true }
                     Picker("Sort", selection: $order) { Text("Library Order").tag("publisher"); Text("Name").tag("name"); Text("Developer").tag("developer") }
+                        .pickerStyle(.inline).labelsHidden()
                 } label: { Image(systemName: "ellipsis.circle") }
                     .tint(.primary).accessibilityLabel("Sort and search apps")
             } }
@@ -456,7 +457,6 @@ struct IPACategoryView: View {
 }
 
 struct IPATodayView: View {
-    @State private var suggestions = false
     @EnvironmentObject private var catalog: AltStoreSourcesViewModel
     @EnvironmentObject private var discovery: IPADiscovery
     @ObservedObject private var libraryIndex = IPALibraryIndex.shared
@@ -483,10 +483,6 @@ struct IPATodayView: View {
                             RoundedRectangle(cornerRadius: 26, style: .continuous).fill(IPAStyle.card)
                                 .frame(height: 430).overlay { ProgressView() }.accessibilityLabel("Loading today’s library")
                         }
-                        VStack(spacing: 12) {
-                            Text("Looking for more apps?").ipaFont(.title3, weight: .bold)
-                            Button { suggestions = true } label: { Text("Add a Library") }.buttonStyle(IPAPillStyle())
-                        }.frame(maxWidth: .infinity).padding(.vertical, 20)
                     }.padding(.horizontal, 20).padding(.bottom, 30).frame(maxWidth: 760).frame(maxWidth: .infinity)
                 }.background(IPAStyle.canvas)
                     .task(id: Calendar.current.startOfDay(for: context.date)) { discovery.updateFeatured(on: context.date) }
@@ -497,7 +493,7 @@ struct IPATodayView: View {
                     async let suggestions: Void = discovery.load(force: true)
                     _ = await (subscriptions, suggestions)
                 }
-        }.sheet(isPresented: $suggestions) { IPASuggestionsSheet() }
+        }
     }
 }
 
@@ -571,20 +567,23 @@ struct IPAStoresView: View {
     @State private var suggestions = false
     @State private var query = ""
     @State private var searching = false
-    @State private var arranging = false
     @State private var sorting = false
     @State private var showingArrangement = false
-    @AppStorage("IPASourceSort") private var sourceSort = "manual"
+    @AppStorage("IPASourceSort") private var sourceSort = IPAStoreSort.defaultOrder.rawValue
     @AppStorage("IPASourceOrder") private var sourceOrder = "[]"
-    private var orderedSources: [AltStoreSourcesViewModel.SourceItem] {
-        let saved = (try? JSONDecoder().decode([String].self, from: Data(sourceOrder.utf8))) ?? []
-        let positions = Dictionary(saved.enumerated().map { ($0.element, $0.offset) }, uniquingKeysWith: { a, _ in a })
-        return catalog.sources.enumerated().filter { query.isEmpty || IPAStoreDirectory.title(for: $0.element).localizedCaseInsensitiveContains(query) }.sorted { a, b in
-            if sourceSort == "name" { return IPAStoreDirectory.title(for: a.element).localizedStandardCompare(IPAStoreDirectory.title(for: b.element)) == .orderedAscending }
-            let x = positions[IPAStoreDirectory.canonical(a.element.url)] ?? (saved.count + a.offset)
-            let y = positions[IPAStoreDirectory.canonical(b.element.url)] ?? (saved.count + b.offset)
-            return x < y
-        }.map(\.element)
+
+    private var selectedSort: IPAStoreSort {
+        if sourceSort == "name" { return .alphabetical }
+        if sourceSort == "manual" { return sourceOrder == "[]" ? .defaultOrder : .custom }
+        return IPAStoreSort(rawValue: sourceSort) ?? .defaultOrder
+    }
+
+    private var sortedSources: [AltStoreSourcesViewModel.SourceItem] {
+        selectedSort.ordered(catalog.sources, savedOrder: sourceOrder)
+    }
+
+    private var visibleSources: [AltStoreSourcesViewModel.SourceItem] {
+        sortedSources.filter { query.isEmpty || IPAStoreDirectory.title(for: $0).localizedCaseInsensitiveContains(query) }
     }
     @State private var refreshDetails = false
     private var failedSources: [AltStoreSourcesViewModel.SourceItem] { catalog.sources.filter { $0.error != nil } }
@@ -609,15 +608,15 @@ struct IPAStoresView: View {
                     }
                     if catalog.sources.isEmpty {
                         IPACollectionEmptyState(symbol: IPAStyle.storeSymbol, message: "Your added stores appear here.") {
-                            Button("Add some in Suggestions") { suggestions = true }
-                                .ipaFont(.subheadline, weight: .semibold)
-                                .padding(.horizontal, 16)
-                                .frame(minHeight: 44)
-                                .background(.secondary.opacity(0.12), in: Capsule())
-                                .buttonStyle(.plain)
+                            Button { suggestions = true } label: {
+                                Text("Add a Library").frame(minHeight: 44)
+                            }.buttonStyle(IPAPillStyle(prominent: true))
                         }
                     }
-                    ForEach(orderedSources) { item in
+                    if !catalog.sources.isEmpty && !searching {
+                        IPAArrangeCollectionButton("Arrange Stores") { showingArrangement = true }
+                    }
+                    ForEach(visibleSources) { item in
                         VStack(alignment: .leading, spacing: 8) {
                             IPALibraryCard(reference: IPAStoreReference(item), source: item.source, subtitle: item.source.flatMap { $0.apps.isEmpty ? nil : "\($0.apps.count) \($0.apps.count == 1 ? "app" : "apps")" } ?? (item.error == nil ? "App library" : "Unavailable · see update details"))
 
@@ -641,24 +640,19 @@ struct IPAStoresView: View {
                         Button("Sort", systemImage: "line.3.horizontal.decrease") { sorting = true }
                     }
                 }
-                .sheet(isPresented: $sorting, onDismiss: {
-                    if arranging { arranging = false; showingArrangement = true }
-                }) {
-                    NavigationStack {
-                        Form {
-                            Picker("Sort", selection: $sourceSort) {
-                                Text("My Order").tag("manual")
-                                Text("Name").tag("name")
-                            }.pickerStyle(.inline)
-                            Button("Arrange Stores", systemImage: "line.3.horizontal") {
-                                query = ""; searching = false; sourceSort = "manual"
-                                arranging = true; sorting = false
-                            }
-                        }.navigationTitle("Sort Stores").navigationBarTitleDisplayMode(.inline)
-                    }.presentationDetents([.medium]).presentationDragIndicator(.visible)
+                .sheet(isPresented: $sorting) {
+                    IPACollectionSortSheet(selection: Binding(get: { selectedSort }, set: { sourceSort = $0.rawValue }),
+                                           options: IPAStoreSort.allCases, title: \.title)
                 }
                 .modifier(IPACollectionSearch(query: $query, presented: $searching, prompt: "Search Libraries"))
-                .sheet(isPresented: $showingArrangement) { IPAArrangeLibraries(items: orderedSources, storedOrder: $sourceOrder) }
+                .sheet(isPresented: $showingArrangement) {
+                    IPAArrangeLibraries(items: sortedSources) { order in
+                        if let data = try? JSONEncoder().encode(order) {
+                            sourceOrder = String(decoding: data, as: UTF8.self)
+                            sourceSort = IPAStoreSort.custom.rawValue
+                        }
+                    }
+                }
                 .sheet(isPresented: $suggestions) { IPASuggestionsSheet() }
                 .navigationDestination(for: IPAStoreReference.self) { IPAStorePage(reference: $0) }
                 .refreshable { await catalog.refreshAllSources() }

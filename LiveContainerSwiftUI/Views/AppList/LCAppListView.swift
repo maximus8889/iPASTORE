@@ -78,7 +78,6 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
     
     @State private var customSortViewPresent = false
     @State private var sortingApps = false
-    @State private var revealingArrangement = false
     @State private var showingUpdates = false
     @EnvironmentObject private var catalog: AltStoreSourcesViewModel
     @EnvironmentObject private var discovery: IPADiscovery
@@ -170,6 +169,11 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                         if installprogressVisible {
                             ProgressView().accessibilityLabel("Importing app")
                         }
+                    }
+                    if sharedModel.multiLCStatus != 2, !collectionSearch,
+                       !sortedApps.isEmpty || (sharedModel.isHiddenAppUnlocked && !sortedHiddenApps.isEmpty) {
+                        IPAArrangeCollectionButton("Arrange Apps") { customSortViewPresent = true }
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     if sortedApps.isEmpty && sortedHiddenApps.isEmpty && installer.independentApps.isEmpty {
                         IPACollectionEmptyState(symbol: IPAStyle.appsSymbol, message: "Your downloaded apps appear here.") {}
@@ -416,20 +420,9 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
         .sheet(isPresented: $customSortViewPresent) {
             LCCustomSortView()
         }
-        .sheet(isPresented: $sortingApps, onDismiss: {
-            if revealingArrangement { revealingArrangement = false; customSortViewPresent = true }
-        }) {
-            NavigationStack {
-                Form {
-                    Picker("Sort", selection: $sharedAppSortManager.appSortType) {
-                        ForEach(AppSortType.allCases, id: \.self) { sort in Text(sort.displayName).tag(sort) }
-                    }.pickerStyle(.inline)
-                    Button("Arrange Apps", systemImage: "line.3.horizontal") {
-                        revealingArrangement = true
-                        sortingApps = false
-                    }
-                }.navigationTitle("Sort Apps").navigationBarTitleDisplayMode(.inline)
-            }.presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
+        .sheet(isPresented: $sortingApps) {
+            IPACollectionSortSheet(selection: $sharedAppSortManager.appSortType,
+                                   options: AppSortType.allCases, title: \.displayName)
         }
         .sheet(isPresented: $showingUpdates) {
             IPAInstalledAppUpdates(apps: sortedApps.filter { !$0.uiIsHidden && !$0.uiIsLocked },
