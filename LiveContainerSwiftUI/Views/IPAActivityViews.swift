@@ -146,11 +146,13 @@ struct IPAArrangeLibraries: View {
                     ordered.move(fromOffsets: from, toOffset: to)
                     if let data = try? JSONEncoder().encode(ordered.map { IPAStoreDirectory.canonical($0.url) }), let text = String(data: data, encoding: .utf8) { storedOrder = text }
                 }
-            }.environment(\.editMode, .constant(.active))
-                .navigationTitle("Arrange Libraries").navigationBarTitleDisplayMode(.inline).ipaNativePage()
+            }
+                .listStyle(.plain).scrollContentBackground(.hidden).background(IPAStyle.canvas)
+                .environment(\.editMode, .constant(.active))
+                .navigationTitle("Arrange Stores").navigationBarTitleDisplayMode(.inline).ipaNativePage()
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
                 .onAppear { ordered = items }
-        }.modifier(IPATheme())
+        }.ipaTallSheet().modifier(IPATheme())
     }
 }
 

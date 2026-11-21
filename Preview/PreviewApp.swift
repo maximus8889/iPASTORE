@@ -53,16 +53,16 @@ struct PreviewAppsView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    HStack(alignment: .top) {
-                        IPATabHeading("Apps")
-                        Spacer()
-                        IPAAppActions(add: { installRequested = true }, refresh: nil,
-                                      search: { searching = true }, sort: nil)
-                    }
+                    IPATabHeading("Apps")
+                        .padding(.trailing, 52).frame(maxWidth: .infinity, alignment: .leading)
                     IPACollectionEmptyState(symbol: IPAStyle.appsSymbol, message: "Your downloaded apps appear here.") {}
                 }.padding(.horizontal, 20).padding(.top, 8).frame(maxWidth: 760).frame(maxWidth: .infinity)
             }
             .background(IPAStyle.canvas).toolbar(.hidden, for: .navigationBar)
+            .ipaCollectionToolbar {
+                IPAAppActions(add: { installRequested = true }, refresh: nil,
+                              search: { searching = true }, sort: nil)
+            }
             .modifier(IPACollectionSearch(query: $query, presented: $searching))
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.InstallAppNotification)) { _ in installRequested = true }

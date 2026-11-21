@@ -152,18 +152,8 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 4) {
-                        HStack(alignment: .top) {
-                            IPATabHeading("Apps")
-                            Spacer()
-                            if sharedModel.multiLCStatus != 2 {
-                                IPAAppActions(
-                                    add: { choosingIPA = true }, addDisabled: installprogressVisible,
-                                    refresh: { showingUpdates = true },
-                                    search: { collectionSearch = true },
-                                    sort: { sortingApps = true }
-                                )
-                            }
-                        }
+                        IPATabHeading("Apps")
+                            .padding(.trailing, 52).frame(maxWidth: .infinity, alignment: .leading)
                         if let failed = installer.jobs.first(where: { $0.failure != nil }) {
                             Button { installer.showFailure(failed.id) } label: {
                                 Label("Some apps need attention", systemImage: "exclamationmark.circle")
@@ -301,6 +291,16 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                 }
             }
             
+            .ipaCollectionToolbar {
+                if sharedModel.multiLCStatus != 2 {
+                    IPAAppActions(
+                        add: { choosingIPA = true }, addDisabled: installprogressVisible,
+                        refresh: { showingUpdates = true },
+                        search: { collectionSearch = true },
+                        sort: { sortingApps = true }
+                    )
+                }
+            }
             .modifier(IPACollectionSearch(query: $searchContext.query, presented: $collectionSearch))
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
@@ -425,7 +425,6 @@ struct LCAppListView : View, LCAppBannerDelegate, LCAppModelDelegate {
                         ForEach(AppSortType.allCases, id: \.self) { sort in Text(sort.displayName).tag(sort) }
                     }.pickerStyle(.inline)
                     Button("Arrange Apps", systemImage: "line.3.horizontal") {
-                        sharedAppSortManager.appSortType = .custom
                         revealingArrangement = true
                         sortingApps = false
                     }

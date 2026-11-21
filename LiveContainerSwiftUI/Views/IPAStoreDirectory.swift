@@ -266,6 +266,12 @@ struct IPASuggestionCards: View {
     }
 }
 
+extension View {
+    func ipaTallSheet() -> some View {
+        presentationDetents([.large]).presentationDragIndicator(.visible)
+    }
+}
+
 // Discovery is a temporary workspace. Library and app pages inside it retain
 // UIKit's native push/back transitions, including the interactive back swipe.
 struct IPASuggestionsSheet: View {
@@ -273,7 +279,7 @@ struct IPASuggestionsSheet: View {
         NavigationStack {
             IPASuggestionsView()
                 .navigationDestination(for: IPAStoreReference.self) { IPAStorePage(reference: $0) }
-        }.presentationDetents([.large]).presentationDragIndicator(.visible).modifier(IPATheme())
+        }.ipaTallSheet().modifier(IPATheme())
     }
 }
 
@@ -406,15 +412,13 @@ struct IPAAddStoreSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Source Address") {
-                    TextField("https://example.com/apps.json", text: $address)
-                        .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-                }
+                TextField("https://example.com/apps.json", text: $address)
+                    .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+                    .accessibilityLabel("Source address")
                 if let failure { Section { Text(failure).foregroundStyle(.secondary) } }
             }
             .navigationTitle("Add Store").navigationBarTitleDisplayMode(.inline).ipaNativePage()
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.disabled(adding) }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
                         adding = true
@@ -428,5 +432,8 @@ struct IPAAddStoreSheet: View {
                 }
             }
         }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .interactiveDismissDisabled(adding)
     }
 }

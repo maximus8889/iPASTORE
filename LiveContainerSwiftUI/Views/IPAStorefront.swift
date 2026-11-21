@@ -196,6 +196,19 @@ struct IPACollectionActions<Content: View>: View {
     }
 }
 
+extension View {
+    func ipaCollectionToolbar<Actions: View>(@ViewBuilder actions: () -> Actions) -> some View {
+        overlay(alignment: .top) {
+            actions()
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+                .frame(maxWidth: 760)
+                .frame(maxWidth: .infinity)
+        }
+    }
+}
+
 struct IPAAppActions: View {
     let add: () -> Void
     var addDisabled = false
@@ -582,17 +595,8 @@ struct IPAStoresView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     VStack(alignment: .leading, spacing: 4) {
-                        HStack(alignment: .top) {
-                            IPATabHeading("Stores")
-                            Spacer()
-                            IPACollectionActions(title: "Store actions") {
-                                Button("Add", systemImage: "plus") { adding = true }
-                                Button("Suggestions", systemImage: "sparkles") { suggestions = true }
-                                Button("Refresh", systemImage: "arrow.clockwise") { Task { await catalog.refreshAllSources() } }
-                                Button("Search", systemImage: "magnifyingglass") { searching = true }
-                                Button("Sort", systemImage: "line.3.horizontal.decrease") { sorting = true }
-                            }
-                        }
+                        IPATabHeading("Stores")
+                            .padding(.trailing, 52).frame(maxWidth: .infinity, alignment: .leading)
                         if !failedSources.isEmpty {
                             Button { refreshDetails = true } label: {
                                 Label(failedSources.count == 1 ? "1 store needs attention" : "\(failedSources.count) stores need attention",
@@ -628,6 +632,15 @@ struct IPAStoresView: View {
                 .frame(maxWidth: 760).frame(maxWidth: .infinity)
             }.background(IPAStyle.canvas).navigationTitle("").navigationBarTitleDisplayMode(.inline)
                 .toolbar(.hidden, for: .navigationBar)
+                .ipaCollectionToolbar {
+                    IPACollectionActions(title: "Store actions") {
+                        Button("Add", systemImage: "plus") { adding = true }
+                        Button("Suggestions", systemImage: "sparkles") { suggestions = true }
+                        Button("Refresh", systemImage: "arrow.clockwise") { Task { await catalog.refreshAllSources() } }
+                        Button("Search", systemImage: "magnifyingglass") { searching = true }
+                        Button("Sort", systemImage: "line.3.horizontal.decrease") { sorting = true }
+                    }
+                }
                 .sheet(isPresented: $sorting, onDismiss: {
                     if arranging { arranging = false; showingArrangement = true }
                 }) {
